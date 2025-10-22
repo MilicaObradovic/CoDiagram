@@ -13,7 +13,6 @@ const ShapeMenu: React.FC<ShapeMenuProps> = ({ onShapeSelect, selectedShape }) =
         { type: ShapeTypes.CIRCLE, icon: '○', name: 'Circle' },
         { type: ShapeTypes.TRIANGLE, icon: '△', name: 'Triangle' },
         { type: ShapeTypes.DIAMOND, icon: '◇', name: 'Diamond' },
-        { type: ShapeTypes.ARROW, icon: '→', name: 'Arrow' },
         { type: ShapeTypes.TEXT, icon: 'T', name: 'Text' },
     ];
 

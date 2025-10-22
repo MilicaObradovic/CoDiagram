@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import ReactFlow, {
+import {
     MiniMap,
     Controls,
     Background,
@@ -7,70 +7,23 @@ import ReactFlow, {
     useEdgesState,
     addEdge,
     type Connection,
-    type Edge, type ReactFlowInstance, type NodeMouseHandler,
-} from 'reactflow';
+    type Edge, type ReactFlowInstance, type NodeMouseHandler, ReactFlow,
+} from '@xyflow/react';
 import 'reactflow/dist/style.css';
-import type {CustomNode, CustomNodeData, ShapeType, ToolbarState} from "../types/diagram.ts";
+import type { CustomNodeData, ShapeType, ToolbarState} from "../types/diagram.ts";
 import CustomNodeDiv from './customNodeDiv.tsx'
+import DownloadButton from "./downloadButton.tsx";
 interface DiagramCanvasProps {
     toolbarState: ToolbarState;
     selectedShape: ShapeType;
 }
 
-const initialNodes: CustomNode[] = [
-    {
-        id: '1',
-        type: 'default',
-        position: {x: 100, y: 100},
-        data: {label: 'Welcome to Diagram App!'},
-        style: {
-            background: '#3B82F6',
-            color: 'white',
-            border: '2px solid #1E40AF',
-            borderRadius: '8px',
-            padding: '10px',
-        },
-    },
-    {
-        id: '2',
-        type: 'default',
-        position: {x: 400, y: 200},
-        data: {label: 'Add more shapes from the sidebar'},
-        style: {
-            background: '#10B981',
-            color: 'white',
-            border: '2px solid #047857',
-            borderRadius: '8px',
-            padding: '10px',
-        },
-    },
-    {
-        id: '3',
-        type: 'default',
-        position: {x: 200, y: 350},
-        data: {label: 'Drag me around!'},
-        style: {
-            background: '#F59E0B',
-            color: 'white',
-            border: '2px solid #D97706',
-            borderRadius: '8px',
-            padding: '10px',
-        },
-    },
-];
-
-const initialEdges: Edge[] = [
-    // { id: 'e1-2', source: '1', target: '2', type: 'smoothstep' },
-    // { id: 'e2-3', source: '2', target: '3', type: 'smoothstep' },
-];
-
 const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
-                                                         toolbarState,
                                                          selectedShape // Destructure it from props
                                                      }) => {
     console.log('selectedShape:', selectedShape);
-    const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-    const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+    const [nodes, setNodes, onNodesChange] = useNodesState([]);
+    const [edges, setEdges, onEdgesChange] = useEdgesState([]);
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
     const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
     const [editText, setEditText] = useState('');
@@ -167,27 +120,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
                 border: '1px dashed #D1D5DB',
                 width: 150,
                 height: 'auto',
-            },
-            line: {
-                ...baseStyle,
-                background: 'transparent',
-                border: '2px solid #EF4444',
-                width: 100,
-                height: 2,
-            },
-            arrow: {
-                ...baseStyle,
-                background: '#EC4899',
-                color: 'white',
-                border: '2px solid #DB2777',
-                clipPath: 'polygon(0% 0%, 100% 50%, 0% 100%, 0% 70%, 70% 50%, 0% 30%)',
-            },
-            cylinder: {
-                ...baseStyle,
-                background: '#6B7280',
-                color: 'white',
-                border: '2px solid #4B5563',
-            },
+            }
         };
 
         return styles[shapeType] || styles.rectangle;
@@ -249,6 +182,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
                     pannable
                 />
                 <Background  gap={20} size={1} />
+                <DownloadButton />
             </ReactFlow>
         </div>
     );
