@@ -1,18 +1,23 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
-    MiniMap,
-    Controls,
-    Background,
-    useNodesState,
-    useEdgesState,
     addEdge,
+    Background,
     type Connection,
-    type Edge, type ReactFlowInstance, type NodeMouseHandler, ReactFlow,
+    Controls,
+    type Edge,
+    MiniMap,
+    type NodeMouseHandler,
+    ReactFlow,
+    type ReactFlowInstance,
+    useEdgesState,
+    useNodesState
 } from '@xyflow/react';
 import 'reactflow/dist/style.css';
-import type { CustomNodeData, ShapeType, ToolbarState} from "../types/diagram.ts";
+import type {CustomNodeData, ShapeType, ToolbarState} from "../types/diagram.ts";
 import CustomNodeDiv from './customNodeDiv.tsx'
 import DownloadButton from "./downloadButton.tsx";
+import '@xyflow/react/dist/style.css';
+
 interface DiagramCanvasProps {
     toolbarState: ToolbarState;
     selectedShape: ShapeType;
@@ -23,14 +28,18 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
                                                      }) => {
     console.log('selectedShape:', selectedShape);
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
-    const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+    const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
     const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
     const [editText, setEditText] = useState('');
 
     const onConnect = useCallback(
-        (params: Connection | Edge) => setEdges((eds) => addEdge(params, eds)),
-        [setEdges]
+        (params: Connection | Edge) => {
+            setEdges((eds) => {
+                return addEdge(params, eds);
+            });
+        },
+        [setEdges, edges] // Add edges to dependencies
     );
 
     const onInit = useCallback((instance: ReactFlowInstance) => {
@@ -143,13 +152,13 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
             editText={editText}
             setEditText={setEditText}
             setNodes={setNodes}
+            selected={props.selected}
         />
     ), [editingNodeId, editText, setNodes]);
 
     const nodeTypes = useMemo(() => ({
         default: CustomNodeWithProps,
     }), [CustomNodeWithProps]);
-
     return (
         <div style={{width: '100%', height: '100%'}}>
             <ReactFlow
@@ -170,16 +179,13 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
                     nodeBorderRadius={8}
                     nodeColor={(node) => {
                         // Color nodes based on their background color
-                        const bgColor = node.style?.background as string || '#6ede87';
-                        return bgColor;
+                        return node.style?.background as string || '#6ede87';
                     }}
                     position="bottom-right"
                     style={{
                         backgroundColor: '#f8fafc',
                         border: '1px solid #e2e8f0',
                     }}
-                    zoomable
-                    pannable
                 />
                 <Background  gap={20} size={1} />
                 <DownloadButton />

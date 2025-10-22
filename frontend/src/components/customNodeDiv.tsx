@@ -1,6 +1,6 @@
 import type {CustomNodeData} from "../types/diagram.ts";
-import React, {useCallback} from "react";
-import {Handle, Position} from "reactflow";
+import {memo, useCallback} from "react";
+import {Handle, NodeResizer, Position} from "@xyflow/react";
 
 const CustomNodeDiv = ({
     data,
@@ -9,7 +9,7 @@ const CustomNodeDiv = ({
     setEditingNodeId,
     editText,
     setEditText,
-    setNodes
+    setNodes, selected
 }: {
     data: CustomNodeData;
     id: string;
@@ -18,12 +18,13 @@ const CustomNodeDiv = ({
     editText: string;
     setEditText: (text: string) => void;
     setNodes: any;
+    selected:boolean;
 }) => {
 
     // Handle save inside CustomNode
     const handleSave = useCallback(() => {
         console.log('Saving edit for node:', id, 'with text:', editText);
-        setNodes((nds: Node[]) =>
+        setNodes((nds: any[]) =>
             nds.map((node) => {
                 if (node.id === id) {
                     return {
@@ -50,14 +51,13 @@ const CustomNodeDiv = ({
 
     if (editingNodeId === id) {
         return (
-            <div
-                className="rounded-md w-full h-full flex items-center justify-center p-2"
-                style={{
-                    background: 'inherit', // Use same background as display mode
-                    color: 'inherit', // Use same text color
-                    border: 'inherit', // Use same border
-                }}
-            >
+            <>
+            <NodeResizer
+                color="bg-blue-600"
+                isVisible={selected}
+                minWidth={100}
+                minHeight={30}
+            />
             <textarea
                 ref={(textarea) => {
                     if (textarea) {
@@ -90,7 +90,7 @@ const CustomNodeDiv = ({
                     }
                 }}
                 onBlur={handleSave}
-                className="w-full h-full bg-transparent text-inherit focus:outline-none resize-none border-none"
+                className="w-full h-full bg-transparent text-inherit focus:outline-none resize-none border-none placeholder-gray-100 placeholder:italic placeholder:opacity-75"
                 style={{
                     textAlign: 'left',
                     fontFamily: 'inherit',
@@ -98,7 +98,7 @@ const CustomNodeDiv = ({
                     fontSize: 'inherit', // Use same font size
                     fontWeight: 'inherit', // Use same font weight
                 }}
-                placeholder="Type here... (Enter to save)"
+                placeholder="Type here..."
             />
                 <Handle
                     type="target"
@@ -110,18 +110,18 @@ const CustomNodeDiv = ({
                     position={Position.Bottom}
                     className="w-3 h-3 bg-green-500"
                 />
-            </div>
+            </>
         );
     }
 
     return (
-        <div
-            className="rounded-md w-full h-full flex items-center justify-center p-2 "
-            style={{
-                background: 'inherit',
-                color: 'inherit',
-            }}
-        >
+        <>
+        <NodeResizer
+            color="bg-blue-600"
+            isVisible={selected}
+            minWidth={100}
+            minHeight={30}
+        />
             <Handle
                 type="target"
                 position={Position.Top}
@@ -133,8 +133,8 @@ const CustomNodeDiv = ({
                 position={Position.Bottom}
                 className="w-3 h-3 bg-green-500"
             />
-        </div>
+        </>
     );
 
 };
-export default CustomNodeDiv;
+export default memo(CustomNodeDiv);
