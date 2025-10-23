@@ -2,21 +2,26 @@ import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
     addEdge,
     Background,
-    type Connection,
     Controls,
-    type Edge,
     MiniMap,
     type NodeMouseHandler,
     ReactFlow,
     type ReactFlowInstance,
     useEdgesState,
-    useNodesState
+    useNodesState,
+    ConnectionMode,
+    type OnConnect,
+    type Node,
+    type Edge, ConnectionLineType
+
 } from '@xyflow/react';
 import 'reactflow/dist/style.css';
 import type {CustomNodeData, ShapeType, ToolbarState} from "../types/diagram.ts";
 import CustomNodeDiv from './customNodeDiv.tsx'
 import DownloadButton from "./downloadButton.tsx";
 import '@xyflow/react/dist/style.css';
+import CustomEdge from './bidirectionalEdge.tsx';
+
 
 interface DiagramCanvasProps {
     toolbarState: ToolbarState;
@@ -33,13 +38,9 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
     const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
     const [editText, setEditText] = useState('');
 
-    const onConnect = useCallback(
-        (params: Connection | Edge) => {
-            setEdges((eds) => {
-                return addEdge(params, eds);
-            });
-        },
-        [setEdges, edges] // Add edges to dependencies
+    const onConnect: OnConnect = useCallback(
+        (params) => setEdges((eds) => addEdge(params, eds)),
+        [],
     );
 
     const onInit = useCallback((instance: ReactFlowInstance) => {
@@ -135,10 +136,10 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
         return styles[shapeType] || styles.rectangle;
     };
 
-    const onNodeDoubleClick: NodeMouseHandler = useCallback((event, node) => {
+    const onNodeDoubleClick: NodeMouseHandler = useCallback((_event, node) => {
         console.log('Node double-clicked:', node.id, 'Current editingNodeId:', editingNodeId);
         setEditingNodeId(node.id);
-        const nodeData = node.data as CustomNodeData;
+        const nodeData = node.data as unknown as CustomNodeData;
         console.log('Setting editText to:', nodeData?.label);
         setEditText(nodeData?.label || '');
     }, [editingNodeId]);
@@ -159,6 +160,9 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
     const nodeTypes = useMemo(() => ({
         default: CustomNodeWithProps,
     }), [CustomNodeWithProps]);
+    const edgeTypes = {
+        default: CustomEdge,
+    };
     return (
         <div style={{width: '100%', height: '100%'}}>
             <ReactFlow
@@ -169,10 +173,22 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
                 onNodeDoubleClick={onNodeDoubleClick}
                 onConnect={onConnect}
                 onInit={onInit}
+                defaultEdgeOptions={{
+                    type: 'default',
+                    markerEnd: {
+                        type: 'arrowclosed',
+                        color: '#000000',
+                        width: 30,
+                        height: 30,
+                    },
+                }}
+                edgeTypes={edgeTypes}
                 nodeTypes={nodeTypes}
+                connectionLineType={ConnectionLineType.Step}
                 fitView
                 minZoom={0.1}
                 maxZoom={10}
+                connectionMode={ConnectionMode.Loose}
             >
                 <Controls/>
                 <MiniMap

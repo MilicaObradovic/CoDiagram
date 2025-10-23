@@ -101,7 +101,7 @@ const CustomNodeDiv = ({
                 placeholder="Type here..."
             />
                 <Handle
-                    type="target"
+                    type="source"
                     position={Position.Top}
                     className="w-3 h-3 bg-blue-500"
                 />
@@ -123,15 +123,15 @@ const CustomNodeDiv = ({
             minHeight={30}
         />
             <Handle
-                type="target"
+                type="source"
                 position={Position.Top}
-                className="w-3 h-3 bg-blue-500"
+                className="w-3 h-3 bg-blue-500" id="right"
             />
             <div className="text-center">{data.label}</div>
             <Handle
                 type="source"
                 position={Position.Bottom}
-                className="w-3 h-3 bg-green-500"
+                className="w-3 h-3 bg-green-500" id="left"
             />
         </>
     );
