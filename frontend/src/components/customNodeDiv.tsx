@@ -103,12 +103,22 @@ const CustomNodeDiv = ({
                 <Handle
                     type="source"
                     position={Position.Top}
-                    className="w-3 h-3 bg-blue-500"
+                    className="w-3 h-3 bg-blue-500" id="top"
                 />
                 <Handle
                     type="source"
                     position={Position.Bottom}
-                    className="w-3 h-3 bg-green-500"
+                    className="w-3 h-3 bg-green-500" id="bottom"
+                />
+                <Handle
+                    type="source"
+                    position={Position.Left}
+                    className="w-3 h-3 bg-blue-500" id="left"
+                />
+                <Handle
+                    type="source"
+                    position={Position.Right}
+                    className="w-3 h-3 bg-green-500" id="right"
                 />
             </>
         );
@@ -125,13 +135,24 @@ const CustomNodeDiv = ({
             <Handle
                 type="source"
                 position={Position.Top}
-                className="w-3 h-3 bg-blue-500" id="right"
+                className="w-3 h-3 bg-blue-500" id="top"
+            />
+
+            <Handle
+                type="source"
+                position={Position.Left}
+                className="w-3 h-3 bg-blue-500" id="left"
             />
             <div className="text-center">{data.label}</div>
             <Handle
                 type="source"
                 position={Position.Bottom}
-                className="w-3 h-3 bg-green-500" id="left"
+                className="w-3 h-3 bg-green-500" id="bottom"
+            />
+            <Handle
+                type="source"
+                position={Position.Right}
+                className="w-3 h-3 bg-green-500" id="right"
             />
         </>
     );

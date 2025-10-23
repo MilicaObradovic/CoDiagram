@@ -93,43 +93,153 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
             alignItems: 'center',
             justifyContent: 'center',
             textAlign: 'center' as const,
+            background: 'transparent',
+            color: '#000000',
+            border: '2px solid #000000',
         };
 
         const styles: { [key: string]: any } = {
+            // Basic Shapes
             rectangle: {
                 ...baseStyle,
-                background: '#3B82F6',
-                color: 'white',
-                border: '2px solid #1E40AF',
             },
             circle: {
                 ...baseStyle,
-                background: '#10B981',
-                color: 'white',
-                border: '2px solid #047857',
                 borderRadius: '50%',
             },
             triangle: {
                 ...baseStyle,
-                background: '#F59E0B',
-                color: 'white',
-                border: '2px solid #D97706',
                 clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)',
             },
             diamond: {
                 ...baseStyle,
-                background: '#8B5CF6',
-                color: 'white',
-                border: '2px solid #7C3AED',
                 clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
             },
             text: {
                 ...baseStyle,
-                background: 'transparent',
-                color: '#374151',
-                border: '1px dashed #D1D5DB',
+                border: '1px dashed #000000',
                 width: 150,
                 height: 'auto',
+            },
+            line: {
+                ...baseStyle,
+                width: 100,
+                height: 2,
+                background: '#000000',
+                border: 'none',
+                padding: 0,
+            },
+            arrow: {
+                ...baseStyle,
+                width: 80,
+                height: 40,
+                clipPath: 'polygon(0% 0%, 80% 0%, 80% 30%, 100% 50%, 80% 70%, 80% 100%, 0% 100%)',
+            },
+            cylinder: {
+                ...baseStyle,
+                position: 'relative',
+                overflow: 'hidden',
+                '::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: '20%',
+                    background: '#000000',
+                    borderRadius: '50%',
+                },
+                '::after': {
+                    content: '""',
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    height: '20%',
+                    background: '#000000',
+                    borderRadius: '50%',
+                }
+            },
+
+            // UML Shapes
+            uml_class: {
+                ...baseStyle,
+                border: '2px solid #000000',
+                background: 'transparent',
+            },
+            uml_actor: {
+                ...baseStyle,
+                width: 60,
+                height: 80,
+                clipPath: 'path("M 30 0 L 60 30 L 45 30 L 45 50 L 15 50 L 15 30 L 0 30 Z")',
+            },
+            uml_use_case: {
+                ...baseStyle,
+                border: '2px solid #000000',
+                borderRadius: '50%',
+            },
+            uml_component: {
+                ...baseStyle,
+                border: '2px solid #000000',
+                position: 'relative',
+                '::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: -2,
+                    left: 10,
+                    right: 10,
+                    height: '2px',
+                    background: '#000000',
+                }
+            },
+
+            // Mind Map Shapes
+            mindmap_central: {
+                ...baseStyle,
+                borderRadius: '50%',
+                background: '#000000',
+                color: '#ffffff',
+            },
+            mindmap_topic: {
+                ...baseStyle,
+                borderRadius: '20px',
+                border: '2px solid #000000',
+            },
+            mindmap_subtopic: {
+                ...baseStyle,
+                borderRadius: '10px',
+                border: '1px solid #000000',
+                width: 100,
+                height: 40,
+            },
+
+            // Conceptual Diagrams
+            concept_entity: {
+                ...baseStyle,
+                border: '2px solid #000000',
+                background: 'transparent',
+            },
+            concept_process: {
+                ...baseStyle,
+                border: '2px solid #000000',
+                borderRadius: '5px',
+            },
+            concept_database: {
+                ...baseStyle,
+                position: 'relative',
+                border: '2px solid #000000',
+                borderRadius: '5px 5px 0 0',
+                '::after': {
+                    content: '""',
+                    position: 'absolute',
+                    bottom: '-10px',
+                    left: '5%',
+                    right: '5%',
+                    height: '10px',
+                    border: '2px solid #000000',
+                    borderTop: 'none',
+                    borderRadius: '0 0 5px 5px',
+                }
             }
         };
 

@@ -17,8 +17,6 @@ export interface CustomNodeData {
 export interface CustomNode extends Node {
     data: CustomNodeData;
 }
-
-
 export type ShapeType =
     | 'rectangle'
     | 'circle'
@@ -27,9 +25,20 @@ export type ShapeType =
     | 'arrow'
     | 'text'
     | 'diamond'
-    | 'cylinder';
+    | 'cylinder'
+    | 'uml_class'
+    | 'uml_actor'
+    | 'uml_use_case'
+    | 'uml_component'
+    | 'mindmap_central'
+    | 'mindmap_topic'
+    | 'mindmap_subtopic'
+    | 'concept_entity'
+    | 'concept_process'
+    | 'concept_database';
 
 export const ShapeTypes = {
+    // Basic Shapes
     RECTANGLE: 'rectangle' as ShapeType,
     CIRCLE: 'circle' as ShapeType,
     TRIANGLE: 'triangle' as ShapeType,
@@ -38,14 +47,36 @@ export const ShapeTypes = {
     TEXT: 'text' as ShapeType,
     DIAMOND: 'diamond' as ShapeType,
     CYLINDER: 'cylinder' as ShapeType,
+
+    // UML Shapes
+    UML_CLASS: 'uml_class' as ShapeType,
+    UML_ACTOR: 'uml_actor' as ShapeType,
+    UML_USE_CASE: 'uml_use_case' as ShapeType,
+    UML_COMPONENT: 'uml_component' as ShapeType,
+
+    // Mind Map Shapes
+    MIND_MAP_CENTRAL: 'mindmap_central' as ShapeType,
+    MIND_MAP_TOPIC: 'mindmap_topic' as ShapeType,
+    MIND_MAP_SUBTOPIC: 'mindmap_subtopic' as ShapeType,
+
+    // Conceptual Diagrams
+    CONCEPT_ENTITY: 'concept_entity' as ShapeType,
+    CONCEPT_PROCESS: 'concept_process' as ShapeType,
+    CONCEPT_DATABASE: 'concept_database' as ShapeType,
 };
 
-export interface Tool {
-    id: string;
-    name: string;
-    type: 'select' | 'shape' | 'connection' | 'text' | 'zoom' | 'hand';
+export enum DiagramCategory {
+    BASIC_SHAPES = 'basic',
+    UML = 'uml',
+    MIND_MAP = 'mindmap',
+    CONCEPTUAL = 'conceptual'
+}
+
+export interface ShapeDefinition {
+    type: ShapeType;
     icon: string;
-    shortcut?: string;
+    name: string;
+    category: DiagramCategory;
 }
 
 export interface ToolbarState {
