@@ -1,5 +1,5 @@
 import type {CustomNodeData} from "../types/diagram.ts";
-import {memo, useCallback} from "react";
+import {memo, useCallback, useState} from "react";
 import {Handle, NodeResizer, Position} from "@xyflow/react";
 
 const CustomNodeDiv = ({
@@ -21,6 +21,7 @@ const CustomNodeDiv = ({
     selected:boolean;
 }) => {
 
+    const [isHovered, setIsHovered] = useState(false);
     // Handle save inside CustomNode
     const handleSave = useCallback(() => {
         console.log('Saving edit for node:', id, 'with text:', editText);
@@ -125,36 +126,64 @@ const CustomNodeDiv = ({
     }
 
     return (
-        <>
-        <NodeResizer
-            color="bg-blue-600"
-            isVisible={selected}
-            minWidth={100}
-            minHeight={30}
-        />
-            <Handle
-                type="source"
-                position={Position.Top}
-                className="w-3 h-3 bg-blue-500" id="top"
+        <div onMouseEnter={() => setIsHovered(true)}
+             onMouseLeave={() => setIsHovered(false)}>
+            <div>
+            <NodeResizer
+                color="bg-blue-600"
+                isVisible={selected}
+                minWidth={100}
+                minHeight={30}
             />
+                <Handle
+                    type="source"
+                    position={Position.Top}
+                    className={`w-3 h-3 transition-all duration-200 ${
+                        isHovered
+                            ? 'bg-blue-500 opacity-100'
+                            : 'bg-transparent opacity-0'
+                    }`}
+                    id="top"
+                />
 
-            <Handle
-                type="source"
-                position={Position.Left}
-                className="w-3 h-3 bg-blue-500" id="left"
-            />
-            <div className="text-center">{data.label}</div>
-            <Handle
-                type="source"
-                position={Position.Bottom}
-                className="w-3 h-3 bg-green-500" id="bottom"
-            />
-            <Handle
-                type="source"
-                position={Position.Right}
-                className="w-3 h-3 bg-green-500" id="right"
-            />
-        </>
+                <Handle
+                    type="source"
+                    position={Position.Left}
+                    className={`w-3 h-3 transition-all duration-200 ${
+                        isHovered
+                            ? 'bg-blue-500 opacity-100'
+                            : 'bg-transparent opacity-0'
+                    }`}
+                    id="left"
+                />
+
+                <div className="text-center">
+                    {data.label}
+                </div>
+
+                <Handle
+                    type="source"
+                    position={Position.Bottom}
+                    className={`w-3 h-3 transition-all duration-200 ${
+                        isHovered
+                            ? 'bg-blue-500 opacity-100'
+                            : 'bg-transparent opacity-0'
+                    }`}
+                    id="bottom"
+                />
+
+                <Handle
+                    type="source"
+                    position={Position.Right}
+                    className={`w-3 h-3 transition-all duration-200 ${
+                        isHovered
+                            ? 'bg-blue-500 opacity-100'
+                            : 'bg-transparent opacity-0'
+                    }`}
+                    id="right"
+                />
+            </div>
+        </div>
     );
 
 };
