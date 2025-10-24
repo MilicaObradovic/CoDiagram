@@ -1,15 +1,14 @@
 import type {CustomNodeData} from "../types/diagram.ts";
 import {memo, useCallback, useState} from "react";
 import {Handle, NodeResizer, Position} from "@xyflow/react";
-
+import  { useStore } from '../store';
 const CustomNodeDiv = ({
     data,
     id,
     editingNodeId,
     setEditingNodeId,
     editText,
-    setEditText,
-    setNodes, selected
+    setEditText, selected
 }: {
     data: CustomNodeData;
     id: string;
@@ -17,28 +16,18 @@ const CustomNodeDiv = ({
     setEditingNodeId: (id: string | null) => void;
     editText: string;
     setEditText: (text: string) => void;
-    setNodes: any;
     selected:boolean;
 }) => {
-
     const [isHovered, setIsHovered] = useState(false);
+    const nodes = useStore(state => state.nodes);
+    const currentNode = nodes.find(node => node.id === id);
+    const currentLabel = currentNode?.data?.label || data.label;
     // Handle save inside CustomNode
     const handleSave = useCallback(() => {
         console.log('Saving edit for node:', id, 'with text:', editText);
-        setNodes((nds: any[]) =>
-            nds.map((node) => {
-                if (node.id === id) {
-                    return {
-                        ...node,
-                        data: { ...node.data, label: editText } as CustomNodeData,
-                    };
-                }
-                return node;
-            })
-        );
+        useStore.getState().updateNodeLabel(id, editText);
         setEditingNodeId(null);
-        setEditText('');
-    }, [id, editText, setNodes, setEditingNodeId, setEditText]);
+    }, [id, editText, setEditingNodeId, setEditText]);
 
     // Handle cancel inside CustomNode
     const handleCancel = useCallback(() => {
@@ -90,7 +79,7 @@ const CustomNodeDiv = ({
                         handleCancel();
                     }
                 }}
-                onBlur={handleSave}
+                onBlur={handleCancel}
                 className="w-full h-full bg-transparent text-inherit focus:outline-none resize-none border-none placeholder-gray-100 placeholder:italic placeholder:opacity-75"
                 style={{
                     textAlign: 'left',
@@ -158,7 +147,7 @@ const CustomNodeDiv = ({
                 />
 
                 <div className="text-center">
-                    {data.label}
+                    {currentLabel}
                 </div>
 
                 <Handle

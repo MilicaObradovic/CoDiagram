@@ -1,18 +1,15 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
-    addEdge,
     Background,
+    ConnectionLineType,
+    ConnectionMode,
+    ControlButton,
     Controls,
     MiniMap,
+    type Node,
     type NodeMouseHandler,
     ReactFlow,
-    type ReactFlowInstance,
-    useEdgesState,
-    useNodesState,
-    ConnectionMode,
-    type OnConnect,
-    type Node,
-    type Edge, ConnectionLineType, ControlButton
+    type ReactFlowInstance
 } from '@xyflow/react';
 import 'reactflow/dist/style.css';
 import type {CustomNodeData, ShapeType, ToolbarState} from "../types/diagram.ts";
@@ -20,6 +17,7 @@ import CustomNodeDiv from './customNodeDiv.tsx'
 import DownloadButton from "./downloadButton.tsx";
 import '@xyflow/react/dist/style.css';
 import CustomEdge from './bidirectionalEdge.tsx';
+import {useStore} from '../store';
 
 interface DiagramCanvasProps {
     toolbarState: ToolbarState;
@@ -29,17 +27,32 @@ interface DiagramCanvasProps {
 const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
                                                          selectedShape // Destructure it from props
                                                      }) => {
-    console.log('selectedShape:', selectedShape);
-    const [nodes, setNodes, onNodesChange] = useNodesState([]);
-    const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+    // Use Zustand store for undo/redo and state management
+    const {
+        nodes,
+        edges,
+        setNodes,
+        onNodesChange,
+        onEdgesChange,
+        onConnect,
+        undo,
+        redo,
+        canUndo,
+        canRedo
+    } = useStore();
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
     const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
     const [editText, setEditText] = useState('');
 
-    const onConnect: OnConnect = useCallback(
-        (params) => setEdges((eds) => addEdge(params, eds)),
-        [],
-    );
+    const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+        const ctrl = event.ctrlKey ? 'Control-' : '';
+        const alt = event.altKey ? 'Alt-' : '';
+        const meta = event.metaKey ? 'Meta-' : '';
+        const shift = event.shiftKey ? 'Shift-' : '';
+        const key = `${ctrl}${alt}${shift}${meta}${event.key}`;
+        if (key === 'Meta-z') undo();
+        if (key === 'Shift-Meta-z') redo();
+    };
 
     const onInit = useCallback((instance: ReactFlowInstance) => {
         console.log('ReactFlow initialized');
@@ -63,13 +76,9 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
             },
             style: getShapeStyle(shapeType),
         };
-
-        // Use functional update to get the latest nodes
-        setNodes((nds) => {
-            console.log('Adding new node:', newNode);
-            return nds.concat(newNode);
-        });
-    }, [reactFlowInstance, setNodes]);
+        const currentNodes = useStore.getState().nodes;
+        useStore.getState().setNodes([...currentNodes, newNode]);
+    }, [reactFlowInstance]);
 
     useEffect(() => {
         console.log('selectedShape changed:', selectedShape);
@@ -259,10 +268,9 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
             setEditingNodeId={setEditingNodeId}
             editText={editText}
             setEditText={setEditText}
-            setNodes={setNodes}
             selected={props.selected}
         />
-    ), [editingNodeId, editText, setNodes]);
+    ), [editingNodeId, editText]);
 
     const nodeTypes = useMemo(() => ({
         default: CustomNodeWithProps,
@@ -273,13 +281,17 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
     return (
         <div style={{width: '100%', height: '100%'}}>
             <ReactFlow
+                tabIndex={0}
                 nodes={nodes}
                 edges={edges}
+                edgeTypes={edgeTypes}
+                nodeTypes={nodeTypes}
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
                 onNodeDoubleClick={onNodeDoubleClick}
                 onConnect={onConnect}
                 onInit={onInit}
+                onKeyDown={(e) => onKeyDown(e)}
                 defaultEdgeOptions={{
                     type: 'default',
                     markerEnd: {
@@ -289,16 +301,26 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
                         height: 30,
                     },
                 }}
-                edgeTypes={edgeTypes}
-                nodeTypes={nodeTypes}
                 connectionLineType={ConnectionLineType.Step}
                 fitView
                 minZoom={0.1}
                 maxZoom={10}
                 connectionMode={ConnectionMode.Loose}
             >
-                <Controls>
-                        <DownloadButton />
+                <Controls showZoom={true}
+                          showFitView={false}
+                          showInteractive={false}>
+                    <ControlButton title="Undo"
+                                   onClick={undo}
+                                   disabled={!canUndo?.()}>
+                        <div style={{fontSize:24}} >&#x27F2;</div>
+                    </ControlButton>
+                    <ControlButton title="Redo"
+                                   onClick={redo}
+                                   disabled={!canRedo?.()}>
+                        <div style={{fontSize:24}}>&#x27F3;</div>
+                    </ControlButton>
+                    <DownloadButton />
                 </Controls>
                 <MiniMap
                     nodeBorderRadius={8}
@@ -313,7 +335,6 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
                     }}
                 />
                 <Background  gap={20} size={1} />
-                {/*<DownloadButton />*/}
             </ReactFlow>
         </div>
     );

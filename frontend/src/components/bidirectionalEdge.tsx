@@ -3,7 +3,6 @@ import {
     BaseEdge,
     type EdgeProps,
 } from '@xyflow/react';
-
 export default function CustomEdge({
        sourceX,
        sourceY,
@@ -13,7 +12,6 @@ export default function CustomEdge({
        targetPosition,
        markerEnd, selected,
    }: EdgeProps) {
-
     const edgePathParams = {
         sourceX,
         sourceY,
