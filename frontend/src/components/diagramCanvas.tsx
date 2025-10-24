@@ -24,14 +24,11 @@ interface DiagramCanvasProps {
     selectedShape: ShapeType;
 }
 
-const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
-                                                         selectedShape // Destructure it from props
-                                                     }) => {
-    // Use Zustand store for undo/redo and state management
+const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape}) => {
+    // Zustand store for undo/redo and state management
     const {
         nodes,
         edges,
-        setNodes,
         onNodesChange,
         onEdgesChange,
         onConnect,
@@ -55,7 +52,6 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
     };
 
     const onInit = useCallback((instance: ReactFlowInstance) => {
-        console.log('ReactFlow initialized');
         setReactFlowInstance(instance);
     }, []);
 
@@ -313,14 +309,14 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
                     <ControlButton title="Undo"
                                    onClick={undo}
                                    disabled={!canUndo?.()}>
-                        <div style={{fontSize:24}} >&#x27F2;</div>
+                        <div style={{fontSize: 24}}>&#x27F2;</div>
                     </ControlButton>
                     <ControlButton title="Redo"
                                    onClick={redo}
                                    disabled={!canRedo?.()}>
-                        <div style={{fontSize:24}}>&#x27F3;</div>
+                        <div style={{fontSize: 24}}>&#x27F3;</div>
                     </ControlButton>
-                    <DownloadButton />
+                    <DownloadButton/>
                 </Controls>
                 <MiniMap
                     nodeBorderRadius={8}
@@ -334,7 +330,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
                         border: '1px solid #e2e8f0',
                     }}
                 />
-                <Background  gap={20} size={1} />
+                <Background gap={20} size={1}/>
             </ReactFlow>
         </div>
     );

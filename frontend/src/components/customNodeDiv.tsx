@@ -1,95 +1,90 @@
 import type {CustomNodeData} from "../types/diagram.ts";
-import {memo, useCallback, useState} from "react";
+import React, {memo, useCallback, useState} from "react";
 import {Handle, NodeResizer, Position} from "@xyflow/react";
-import  { useStore } from '../store';
+import {useStore} from '../store';
+
 const CustomNodeDiv = ({
-    data,
-    id,
-    editingNodeId,
-    setEditingNodeId,
-    editText,
-    setEditText, selected
-}: {
+                           data,
+                           id,
+                           editingNodeId,
+                           setEditingNodeId,
+                           editText,
+                           setEditText, selected
+                       }: {
     data: CustomNodeData;
     id: string;
     editingNodeId: string | null;
     setEditingNodeId: (id: string | null) => void;
     editText: string;
     setEditText: (text: string) => void;
-    selected:boolean;
+    selected: boolean;
 }) => {
     const [isHovered, setIsHovered] = useState(false);
     const nodes = useStore(state => state.nodes);
     const currentNode = nodes.find(node => node.id === id);
-    const currentLabel = currentNode?.data?.label || data.label;
-    // Handle save inside CustomNode
+    const currentLabel = (currentNode?.data?.label || data.label) as React.ReactNode;
+
     const handleSave = useCallback(() => {
-        console.log('Saving edit for node:', id, 'with text:', editText);
         useStore.getState().updateNodeLabel(id, editText);
         setEditingNodeId(null);
     }, [id, editText, setEditingNodeId, setEditText]);
 
-    // Handle cancel inside CustomNode
     const handleCancel = useCallback(() => {
-        console.log('Canceling edit for node:', id);
         setEditingNodeId(null);
         setEditText('');
     }, [setEditingNodeId, setEditText]);
 
-
-    console.log('CustomNode rendering:', id, 'editing:', editingNodeId === id, 'editText:', editText);
-
     if (editingNodeId === id) {
         return (
             <>
-            <NodeResizer
-                color="bg-blue-600"
-                isVisible={selected}
-                minWidth={100}
-                minHeight={30}
-            />
-            <textarea
-                ref={(textarea) => {
-                    if (textarea) {
-                        // Auto-resize to fit content but within node bounds
-                        textarea.style.height = 'auto';
-                        const nodeHeight = 60; // Match your node height
-                        textarea.style.height = Math.min(textarea.scrollHeight, nodeHeight) + 'px';
+                <NodeResizer
+                    color="bg-blue-600"
+                    isVisible={selected}
+                    minWidth={100}
+                    minHeight={30}
+                />
+                <textarea
+                    ref={(textarea) => {
+                        if (textarea) {
+                            // Auto-resize to fit content but within node bounds
+                            textarea.style.height = 'auto';
+                            const nodeHeight = 60;
+                            textarea.style.height = Math.min(textarea.scrollHeight, nodeHeight) + 'px';
 
-                        // Set cursor to the end of text
-                        textarea.focus();
-                        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-                    }
-                }}
-                value={editText}
-                onChange={(e) => {
-                    setEditText(e.target.value);
-                    // Auto-resize as user types
-                    const textarea = e.target;
-                    textarea.style.height = 'auto';
-                    const nodeHeight = 60;
-                    textarea.style.height = Math.min(textarea.scrollHeight, nodeHeight) + 'px';
-                }}
-                onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSave();
-                    } else if (e.key === 'Escape') {
-                        e.preventDefault();
-                        handleCancel();
-                    }
-                }}
-                onBlur={handleCancel}
-                className="w-full h-full bg-transparent text-inherit focus:outline-none resize-none border-none placeholder-gray-100 placeholder:italic placeholder:opacity-75"
-                style={{
-                    textAlign: 'left',
-                    fontFamily: 'inherit',
-                    lineHeight: '1.4',
-                    fontSize: 'inherit', // Use same font size
-                    fontWeight: 'inherit', // Use same font weight
-                }}
-                placeholder="Type here..."
-            />
+                            // Set cursor to the end of text
+                            textarea.focus();
+                            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+                        }
+                    }}
+                    value={editText}
+                    onChange={(e) => {
+                        setEditText(e.target.value);
+                        // Auto-resize as user types
+                        const textarea = e.target;
+                        textarea.style.height = 'auto';
+                        const nodeHeight = 60;
+                        textarea.style.height = Math.min(textarea.scrollHeight, nodeHeight) + 'px';
+                    }}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSave();
+                        } else if (e.key === 'Escape') {
+                            e.preventDefault();
+                            handleCancel();
+                        }
+                    }}
+                    onBlur={handleCancel}
+                    className="w-full h-full bg-transparent text-inherit focus:outline-none resize-none border-none placeholder-gray-100 placeholder:italic placeholder:opacity-75"
+                    style={{
+                        textAlign: 'left',
+                        fontFamily: 'inherit',
+                        lineHeight: '1.4',
+                        fontSize: 'inherit',
+                        fontWeight: 'inherit',
+                    }}
+                    placeholder="Type here..."
+                />
                 <Handle
                     type="source"
                     position={Position.Top}
@@ -118,12 +113,12 @@ const CustomNodeDiv = ({
         <div onMouseEnter={() => setIsHovered(true)}
              onMouseLeave={() => setIsHovered(false)}>
             <div>
-            <NodeResizer
-                color="bg-blue-600"
-                isVisible={selected}
-                minWidth={100}
-                minHeight={30}
-            />
+                <NodeResizer
+                    color="bg-blue-600"
+                    isVisible={selected}
+                    minWidth={100}
+                    minHeight={30}
+                />
                 <Handle
                     type="source"
                     position={Position.Top}

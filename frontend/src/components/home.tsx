@@ -17,12 +17,12 @@ function Home() {
     const [selectedShape, setSelectedShape] = useState<ShapeType>();
 
     const handleToolbarStateChange = (newState: Partial<ToolbarState>) => {
-        setToolbarState(prev => ({ ...prev, ...newState }));
+        setToolbarState(prev => ({...prev, ...newState}));
     };
 
     const handleShapeSelect = (shapeType: ShapeType) => {
         setSelectedShape(shapeType);
-        setToolbarState(prev => ({ ...prev, selectedTool: 'shape' }));
+        setToolbarState(prev => ({...prev, selectedTool: 'shape'}));
     };
 
     const handleUndo = () => {

@@ -1,9 +1,8 @@
-import { create } from 'zustand';
-
+import {create} from 'zustand';
 import type {StoreState} from '../types/store.ts';
-import { UndoRedo } from './undo-redo';
-import {addEdge, type Edge, updateEdge} from "reactflow";
-import {applyEdgeChanges, applyNodeChanges, type Connection, type EdgeChange, type NodeChange} from "@xyflow/react";
+import {UndoRedo} from './undo-redo';
+import {addEdge, applyNodeChanges, type NodeChange, type Connection, type Node} from "@xyflow/react";
+import {applyEdgeChanges, type Edge, type EdgeChange} from "reactflow";
 
 UndoRedo.addHistory({nodes: [], edges: []});
 
@@ -15,11 +14,11 @@ const useStore = create<StoreState>((set, get) => ({
 
     setNodes: (nodes: Node[]) => {
         set({nodes});
-        UndoRedo.addHistory({nodes: get().nodes, edges: get().edges}); // Add history
+        UndoRedo.addHistory({nodes: get().nodes, edges: get().edges});
     },
     setEdges: (edges: Edge[]) => {
         set({edges});
-        UndoRedo.addHistory({nodes: get().nodes, edges: get().edges}); // Add history
+        UndoRedo.addHistory({nodes: get().nodes, edges: get().edges});
     },
     onNodesChange: (changes: NodeChange[]) => {
         set({
@@ -37,17 +36,7 @@ const useStore = create<StoreState>((set, get) => ({
 
     onEdgesChange: (changes: EdgeChange[]) => {
         const edges = get().edges;
-        const connectionEdge: Edge[] = [];
-        const pattern = `${changes.length}-${changes[0]?.type}-${changes[1]?.type}`;
-        // When a node removed with 1 in edge and 1 out edge, add a connection ege
-        if (pattern === '2-remove-remove') {
-            const edge1 = edges.find(el => el.id === (changes[0] as any).id);
-            const edge2 = edges.find(el => el.id === (changes[1] as any).id);
-            if (edge1 && edge2 && edge1.target === edge2.source) {
-                connectionEdge.push({...edge1, ...{target: edge2.target}});
-            }
-        }
-        set({ edges: applyEdgeChanges(changes, edges).concat(connectionEdge) });
+        set({edges: applyEdgeChanges(changes, edges)});
         const shouldSaveHistory = changes.some(change =>
             change.type === 'remove'
         );
@@ -57,33 +46,18 @@ const useStore = create<StoreState>((set, get) => ({
         }
     },
 
-    onEdgeUpdate: (oldEdge, newConnection) => {
-        // replace the updated edge id as the format of source-target
-        const newId = `${newConnection.source}-${newConnection.target}`
-        const edges = get().edges;
-        const oldEdgeNdx = edges.findIndex(el => el.id === oldEdge.id);
-        oldEdge.id = newId;
-        edges[oldEdgeNdx].id = newId;
-
-        set({
-            edges: updateEdge(oldEdge, newConnection, edges)
-        });
-
-        UndoRedo.addHistory({nodes: get().nodes, edges: get().edges});
-    },
-
     onConnect: (connection: Connection) => {
-        const existingEdges: any[] = get().edges;
+        const existingEdges: Edge[] = get().edges;
         const newEdges = addEdge(connection, existingEdges);
-        set({ edges: newEdges });
-        UndoRedo.addHistory({ nodes: get().nodes, edges: newEdges });
+        set({edges: newEdges});
+        UndoRedo.addHistory({nodes: get().nodes, edges: newEdges});
     },
 
     updateNodeLabel: (nodeId: string, label: string) => {
         set({
             nodes: get().nodes.map((node) => {
                 if (node.id === nodeId) {
-                    node.data = { ...node.data, label }; // it's important to create a new object here
+                    node.data = {...node.data, label};
                 }
 
                 return node;
@@ -121,4 +95,4 @@ const useStore = create<StoreState>((set, get) => ({
     canRedo: () => UndoRedo.canRedo(),
 }));
 
-export { useStore };
+export {useStore};

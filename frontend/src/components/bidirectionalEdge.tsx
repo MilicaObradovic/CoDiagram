@@ -3,15 +3,16 @@ import {
     BaseEdge,
     type EdgeProps,
 } from '@xyflow/react';
+
 export default function CustomEdge({
-       sourceX,
-       sourceY,
-       targetX,
-       targetY,
-       sourcePosition,
-       targetPosition,
-       markerEnd, selected,
-   }: EdgeProps) {
+                                       sourceX,
+                                       sourceY,
+                                       targetX,
+                                       targetY,
+                                       sourcePosition,
+                                       targetPosition,
+                                       markerEnd, selected,
+                                   }: EdgeProps) {
     const edgePathParams = {
         sourceX,
         sourceY,
@@ -23,7 +24,7 @@ export default function CustomEdge({
 
     let path = '';
 
-    [path] = getSmoothStepPath({...edgePathParams, borderRadius:0});
+    [path] = getSmoothStepPath({...edgePathParams, borderRadius: 0});
 
     return <BaseEdge path={path} markerEnd={markerEnd} style={{
         stroke: '#000000',

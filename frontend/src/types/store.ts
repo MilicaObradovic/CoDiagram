@@ -1,6 +1,5 @@
-import type {Edge, OnEdgeUpdateFunc} from "reactflow";
-import type {OnConnect, OnEdgesChange, OnNodesChange} from "@xyflow/react";
-
+import type {Edge, OnEdgesChange} from "reactflow";
+import type {OnConnect, Node, OnNodesChange} from "@xyflow/react";
 
 export type StoreState = {
     nodes: Node[];
@@ -10,7 +9,6 @@ export type StoreState = {
     nextNodeId: number,
     onNodesChange: OnNodesChange;
     onEdgesChange: OnEdgesChange;
-    onEdgeUpdate: OnEdgeUpdateFunc,
     onConnect: OnConnect;
     updateNodeLabel: (nodeId: string, label: string) => void;
     updateEdgeLabel: (nodeId: string, label: string) => void;
@@ -19,3 +17,8 @@ export type StoreState = {
     canUndo: () => void;
     canRedo: () => void;
 };
+
+export interface HistoryState {
+    nodes: Node[];
+    edges: Edge[];
+}

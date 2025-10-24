@@ -10,6 +10,7 @@ export interface Shape {
     strokeWidth: number;
     text?: string;
 }
+
 export interface CustomNodeData {
     label: string;
 }
@@ -17,6 +18,7 @@ export interface CustomNodeData {
 export interface CustomNode extends Node {
     data: CustomNodeData;
 }
+
 export type ShapeType =
     | 'rectangle'
     | 'circle'
@@ -64,12 +66,17 @@ export const ShapeTypes = {
     CONCEPT_PROCESS: 'concept_process' as ShapeType,
     CONCEPT_DATABASE: 'concept_database' as ShapeType,
 };
+export type DiagramCategory =
+    | 'basic'
+    | 'uml'
+    | 'mindmap'
+    | 'conceptual';
 
-export enum DiagramCategory {
-    BASIC_SHAPES = 'basic',
-    UML = 'uml',
-    MIND_MAP = 'mindmap',
-    CONCEPTUAL = 'conceptual'
+export const DiagramCategories = {
+    BASIC_SHAPES: 'basic' as DiagramCategory,
+    UML: 'uml' as DiagramCategory,
+    MIND_MAP: 'mindmap' as DiagramCategory,
+    CONCEPTUAL: 'conceptual' as DiagramCategory,
 }
 
 export interface ShapeDefinition {

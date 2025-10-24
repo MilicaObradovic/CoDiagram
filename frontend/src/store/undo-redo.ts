@@ -1,10 +1,12 @@
+import type {HistoryState} from '../types/store.ts'
+
 export const UndoRedo = {
     debugMode: 0,
     maxHistory: 50,
-    history: [] as any[],
+    history: [] as HistoryState[],
     position: 0,
 
-    reset(item: any): void {
+    reset(item: HistoryState): void {
         this.history = [structuredClone(item)];
         this.position = 0;
     },
@@ -13,11 +15,11 @@ export const UndoRedo = {
         return this.position > 0;
     },
 
-    canRedo(): boolean{
-        return this.position < this.history.length-1;
+    canRedo(): boolean {
+        return this.position < this.history.length - 1;
     },
 
-    undo(): any | undefined {
+    undo(): HistoryState | undefined {
         if (this.canUndo()) {
             this.position--;
             this.debug('undo');
@@ -25,7 +27,7 @@ export const UndoRedo = {
         }
     },
 
-    redo(): any | undefined {
+    redo(): HistoryState | undefined {
         if (this.canRedo()) {
             this.position++;
             this.debug('redo');
@@ -33,7 +35,7 @@ export const UndoRedo = {
         }
     },
 
-    addHistory(item: any): void {
+    addHistory(item: HistoryState): void {
         this.history =
             this.history.slice(0, this.position + 1)
                 .concat(structuredClone(item))
@@ -45,7 +47,7 @@ export const UndoRedo = {
     debug(cmd: string): void {
         if (!this.debugMode) return;
         const {history, position} = this;
-        const ret = ['undo','redo'].indexOf(cmd) !== -1 ?
+        const ret = ['undo', 'redo'].indexOf(cmd) !== -1 ?
             '=> ' + this.history[this.position] : '';
         const canUndo = this.canUndo();
         const canRedo = this.canRedo();

@@ -21,10 +21,10 @@ const Toolbar: React.FC<ToolbarProps> = ({
                                              canRedo,
                                          }) => {
     const tools = [
-        { id: 'select', name: 'Select', icon: '↦', type: 'select' },
-        { id: 'hand', name: 'Hand', icon: '✋', type: 'hand' },
-        { id: 'text', name: 'Text', icon: 'T', type: 'text' },
-        { id: 'connection', name: 'Connection', icon: '🔗', type: 'connection' },
+        {id: 'select', name: 'Select', icon: '↦', type: 'select'},
+        {id: 'hand', name: 'Hand', icon: '✋', type: 'hand'},
+        {id: 'text', name: 'Text', icon: 'T', type: 'text'},
+        {id: 'connection', name: 'Connection', icon: '🔗', type: 'connection'},
     ];
 
     const navigate = useNavigate();
@@ -72,7 +72,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                     {tools.map((tool) => (
                         <button
                             key={tool.id}
-                            onClick={() => onToolbarStateChange({ selectedTool: tool.id })}
+                            onClick={() => onToolbarStateChange({selectedTool: tool.id})}
                             className={`p-2 rounded text-lg ${
                                 toolbarState.selectedTool === tool.id
                                     ? 'bg-blue-600 text-white'
@@ -92,7 +92,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
                     <button className="p-2 rounded hover:bg-gray-700 text-lg" title="Shapes">
                         ◰
                     </button>
-                    <div className="absolute top-full left-0 mt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                    <div
+                        className="absolute top-full left-0 mt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
                         {/* ShapeMenu will be rendered here */}
                     </div>
                 </div>
