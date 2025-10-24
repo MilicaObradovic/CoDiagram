@@ -12,8 +12,7 @@ import {
     ConnectionMode,
     type OnConnect,
     type Node,
-    type Edge, ConnectionLineType
-
+    type Edge, ConnectionLineType, ControlButton
 } from '@xyflow/react';
 import 'reactflow/dist/style.css';
 import type {CustomNodeData, ShapeType, ToolbarState} from "../types/diagram.ts";
@@ -21,7 +20,6 @@ import CustomNodeDiv from './customNodeDiv.tsx'
 import DownloadButton from "./downloadButton.tsx";
 import '@xyflow/react/dist/style.css';
 import CustomEdge from './bidirectionalEdge.tsx';
-
 
 interface DiagramCanvasProps {
     toolbarState: ToolbarState;
@@ -250,7 +248,6 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
         console.log('Node double-clicked:', node.id, 'Current editingNodeId:', editingNodeId);
         setEditingNodeId(node.id);
         const nodeData = node.data as unknown as CustomNodeData;
-        console.log('Setting editText to:', nodeData?.label);
         setEditText(nodeData?.label || '');
     }, [editingNodeId]);
 
@@ -300,7 +297,9 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
                 maxZoom={10}
                 connectionMode={ConnectionMode.Loose}
             >
-                <Controls/>
+                <Controls>
+                        <DownloadButton />
+                </Controls>
                 <MiniMap
                     nodeBorderRadius={8}
                     nodeColor={(node) => {
@@ -314,7 +313,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
                     }}
                 />
                 <Background  gap={20} size={1} />
-                <DownloadButton />
+                {/*<DownloadButton />*/}
             </ReactFlow>
         </div>
     );

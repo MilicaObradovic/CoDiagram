@@ -1,4 +1,4 @@
-import { Panel, useReactFlow, getNodesBounds, getViewportForBounds } from '@xyflow/react';
+import {useReactFlow, getNodesBounds, getViewportForBounds, ControlButton} from '@xyflow/react';
 import { toPng } from 'html-to-image';
 
 function downloadImage(dataUrl: string) {
@@ -32,14 +32,12 @@ function DownloadButton() {
     };
 
     return (
-        <Panel position="top-left">
-            <button className="download-btn xy-theme__button" onClick={onClick}>
-                <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                </svg>
-            </button>
-        </Panel>
+        <ControlButton onClick={onClick} title="Download diagram">
+            <svg className="w-5 h-5 text-gray-700 !min-w-5 !min-h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+        </ControlButton>
     );
 }
 
