@@ -1,7 +1,7 @@
 import {
     getSmoothStepPath,
     BaseEdge,
-    type EdgeProps,
+    type EdgeProps, getStraightPath, getSimpleBezierPath,
 } from '@xyflow/react';
 
 export default function CustomEdge({
@@ -11,7 +11,7 @@ export default function CustomEdge({
                                        targetY,
                                        sourcePosition,
                                        targetPosition,
-                                       markerEnd, selected,
+                                       markerEnd, selected, type
                                    }: EdgeProps) {
     const edgePathParams = {
         sourceX,
@@ -24,8 +24,21 @@ export default function CustomEdge({
 
     let path = '';
 
-    [path] = getSmoothStepPath({...edgePathParams, borderRadius: 0});
-
+    switch (type) {
+        case 'straight':
+            [path] = getStraightPath(edgePathParams);
+            break;
+        case 'bezier':
+            [path] = getSimpleBezierPath(edgePathParams);
+            break;
+        case 'smoothstep':
+            [path] = getSmoothStepPath({...edgePathParams, borderRadius: 10});
+            break;
+        case 'step':
+        default:
+            [path] = getSmoothStepPath({...edgePathParams, borderRadius: 0});
+            break;
+    }
     return <BaseEdge path={path} markerEnd={markerEnd} style={{
         stroke: '#000000',
         strokeWidth: selected ? 0.65 : 0.5,

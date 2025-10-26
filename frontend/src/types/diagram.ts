@@ -93,3 +93,16 @@ export interface ToolbarState {
     strokeWidth: number;
     fontSize: number;
 }
+
+export type EdgeType =
+    | 'step'
+    | 'smoothstep'
+    | 'straight'
+    | 'bezier';
+
+export const EdgeTypes = {
+    STEP: 'step' as EdgeType,
+    SMOOTHSTEP: 'smoothstep' as EdgeType,
+    STRAIGHT: 'straight' as EdgeType,
+    BEZIER: 'bezier' as EdgeType,
+}

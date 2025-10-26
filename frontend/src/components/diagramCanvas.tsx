@@ -7,17 +7,18 @@ import {
     Controls,
     MiniMap,
     type Node,
-    type NodeMouseHandler,
+    type NodeMouseHandler, Panel,
     ReactFlow,
     type ReactFlowInstance
 } from '@xyflow/react';
 import 'reactflow/dist/style.css';
-import type {CustomNodeData, ShapeType, ToolbarState} from "../types/diagram.ts";
+import {type CustomNodeData, type EdgeType, EdgeTypes, type ShapeType, type ToolbarState} from "../types/diagram.ts";
 import CustomNodeDiv from './customNodeDiv.tsx'
 import DownloadButton from "./downloadButton.tsx";
 import '@xyflow/react/dist/style.css';
 import CustomEdge from './bidirectionalEdge.tsx';
 import {useStore} from '../store';
+import EdgeToolbar from "./EdgeToolbar.tsx";
 
 interface DiagramCanvasProps {
     toolbarState: ToolbarState;
@@ -36,11 +37,15 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
         undo,
         redo,
         canUndo,
-        canRedo
+        canRedo,
+        onEdgeClick
     } = useStore();
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
     const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
     const [editText, setEditText] = useState('');
+    const [selectedEdgeType, setSelectedEdgeType] = useState<EdgeType>(EdgeTypes.STEP);
+    const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
+
 
     const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
         const ctrl = event.ctrlKey ? 'Control-' : '';
@@ -274,71 +279,111 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
         default: CustomNodeWithProps,
     }), [CustomNodeWithProps]);
     const edgeTypes = {
+        [EdgeTypes.STEP]: CustomEdge,
+        [EdgeTypes.SMOOTHSTEP]: CustomEdge,
+        [EdgeTypes.STRAIGHT]: CustomEdge,
+        [EdgeTypes.BEZIER]: CustomEdge,
         default: CustomEdge,
     };
+    const getConnectionLineType = useCallback((edgeType: EdgeType) => {
+        switch (edgeType) {
+            case EdgeTypes.STEP:
+                return ConnectionLineType.Step;
+            case EdgeTypes.SMOOTHSTEP:
+                return ConnectionLineType.SmoothStep;
+            case EdgeTypes.STRAIGHT:
+                return ConnectionLineType.Straight;
+            case EdgeTypes.BEZIER:
+                return ConnectionLineType.SimpleBezier;
+            default:
+                return ConnectionLineType.Step;
+        }
+    }, []);
+
+    // Update defaultEdgeOptions based on selected edge type
+    const defaultEdgeOptions = useMemo(() => ({
+        type: selectedEdgeType,
+        markerEnd: {
+            type: 'arrowclosed',
+            color: '#000000',
+            width: 30,
+            height: 30,
+        },
+    }), [selectedEdgeType]);
+
     return (
-        <div style={{width: '100%', height: '100%'}}>
-            <ReactFlow
-                tabIndex={0}
-                nodes={nodes}
-                edges={edges}
-                edgeTypes={edgeTypes}
-                nodeTypes={nodeTypes}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                onNodeDoubleClick={onNodeDoubleClick}
-                onConnect={onConnect}
-                onInit={onInit}
-                onKeyDown={(e) => onKeyDown(e)}
-                defaultEdgeOptions={{
-                    type: 'default',
-                    markerEnd: {
-                        type: 'arrowclosed',
-                        color: '#000000',
-                        width: 30,
-                        height: 30,
-                    },
-                }}
-                connectionLineType={ConnectionLineType.Step}
-                defaultViewport={{
-                    x: 0,
-                    y: 0,
-                    zoom: 1
-                }}
-                fitView={false}
-                minZoom={0.1}
-                maxZoom={10}
-                connectionMode={ConnectionMode.Loose}
-            >
-                <Controls showZoom={true}
-                          showFitView={false}
-                          showInteractive={false}>
-                    <ControlButton title="Undo"
-                                   onClick={undo}
-                                   disabled={!canUndo?.()}>
-                        <div style={{fontSize: 24}}>&#x27F2;</div>
-                    </ControlButton>
-                    <ControlButton title="Redo"
-                                   onClick={redo}
-                                   disabled={!canRedo?.()}>
-                        <div style={{fontSize: 24}}>&#x27F3;</div>
-                    </ControlButton>
-                    <DownloadButton/>
-                </Controls>
-                <MiniMap
-                    nodeBorderRadius={8}
-                    nodeColor={(node) => {
-                        // Color nodes based on their background color
-                        return node.style?.background as string || '#6ede87';
+        <div style={{width: '100%', height: '100%'}} className="flex">
+            <div className="flex-1">
+                <ReactFlow
+                    tabIndex={0}
+                    nodes={nodes}
+                    edges={edges}
+                    edgeTypes={edgeTypes}
+                    nodeTypes={nodeTypes}
+                    onNodesChange={onNodesChange}
+                    onEdgesChange={onEdgesChange}
+                    onNodeDoubleClick={onNodeDoubleClick}
+                    onConnect={onConnect}
+                    onInit={onInit}
+                    onKeyDown={(e) => onKeyDown(e)}
+                    onEdgeClick={(event, edge) => {
+                        setSelectedEdgeId(edge.id);
+                        setSelectedEdgeType(edge.type as EdgeType || EdgeTypes.STEP);
                     }}
-                    position="bottom-right"
-                    style={{
-                        backgroundColor: '#f8fafc',
-                        border: '1px solid #e2e8f0',
+                    onPaneClick={() => {
+                        // Clear edge selection when clicking on empty space
+                        setSelectedEdgeId(null);
                     }}
-                />
-                <Background gap={20} size={1}/>
-            </ReactFlow>
+                    defaultEdgeOptions={defaultEdgeOptions}
+                    connectionLineType={getConnectionLineType(selectedEdgeType)}
+                    defaultViewport={{
+                        x: 0,
+                        y: 0,
+                        zoom: 1
+                    }}
+                    fitView={false}
+                    minZoom={0.1}
+                    maxZoom={10}
+                    connectionMode={ConnectionMode.Loose}
+                >
+                    <Controls showZoom={true}
+                              showFitView={false}
+                              showInteractive={false}>
+                        <ControlButton title="Undo"
+                                       onClick={undo}
+                                       disabled={!canUndo?.()}>
+                            <div style={{fontSize: 24}}>&#x27F2;</div>
+                        </ControlButton>
+                        <ControlButton title="Redo"
+                                       onClick={redo}
+                                       disabled={!canRedo?.()}>
+                            <div style={{fontSize: 24}}>&#x27F3;</div>
+                        </ControlButton>
+                        <DownloadButton/>
+                    </Controls>
+                    <Panel position="top-right" style={{ right: 10, top: '50%', transform: 'translateY(-50%)' }}>
+                        <EdgeToolbar
+                            selectedEdgeType={selectedEdgeType}
+                            onEdgeTypeSelect={setSelectedEdgeType}
+                            selectedEdgeId={selectedEdgeId}
+                            onUpdateEdgeType={onEdgeClick}
+                        />
+                    </Panel>
+                    <MiniMap
+                        nodeBorderRadius={8}
+                        nodeColor={(node) => {
+                            // Color nodes based on their background color
+                            return node.style?.background as string || '#6ede87';
+                        }}
+                        position="bottom-right"
+                        style={{
+                            backgroundColor: '#f8fafc',
+                            border: '1px solid #e2e8f0',
+                        }}
+                    />
+                    <Background gap={20} size={1}/>
+                </ReactFlow>
+            </div>
         </div>
     );
 };
