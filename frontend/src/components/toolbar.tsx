@@ -6,19 +6,11 @@ interface ToolbarProps {
     toolbarState: ToolbarState;
     onToolbarStateChange: (state: Partial<ToolbarState>) => void;
     onShapeSelect: (shapeType: ShapeType) => void;
-    onUndo: () => void;
-    onRedo: () => void;
-    canUndo: boolean;
-    canRedo: boolean;
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({
                                              toolbarState,
                                              onToolbarStateChange,
-                                             onUndo,
-                                             onRedo,
-                                             canUndo,
-                                             canRedo,
                                          }) => {
     const tools = [
         {id: 'select', name: 'Select', icon: '↦', type: 'select'},
@@ -45,26 +37,6 @@ const Toolbar: React.FC<ToolbarProps> = ({
         <div className="bg-gray-800 text-white p-3 flex items-center justify-between shadow-lg">
             {/* Left Section - Tools & Shapes */}
             <div className="flex items-center space-x-4">
-                {/* Undo/Redo */}
-                <div className="flex space-x-1">
-                    <button
-                        onClick={onUndo}
-                        disabled={!canUndo}
-                        className="p-2 rounded hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Undo (Ctrl+Z)"
-                    >
-                        ⎌
-                    </button>
-                    <button
-                        onClick={onRedo}
-                        disabled={!canRedo}
-                        className="p-2 rounded hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Redo (Ctrl+Y)"
-                    >
-                        ↷
-                    </button>
-                </div>
-
                 <div className="w-px h-6 bg-gray-600"></div>
 
                 {/* Main Tools */}

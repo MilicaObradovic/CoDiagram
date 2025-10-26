@@ -26,7 +26,8 @@ const useStore = create<StoreState>((set, get) => ({
         });
         const shouldSaveHistory = changes.some(change =>
             change.type === 'remove' ||
-            (change.type === 'position' && change.dragging === false) // Only when drag ends
+            (change.type === 'position' && change.dragging === false)|| // Only when drag ends
+            (change.type === 'dimensions' && change.resizing === false)  // Resize end
         );
 
         if (shouldSaveHistory) {

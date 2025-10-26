@@ -22,9 +22,10 @@ import {useStore} from '../store';
 interface DiagramCanvasProps {
     toolbarState: ToolbarState;
     selectedShape: ShapeType;
+    onShapeCreated: () => void;
 }
 
-const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape}) => {
+const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCreated}) => {
     // Zustand store for undo/redo and state management
     const {
         nodes,
@@ -81,8 +82,9 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape}) => {
         if (selectedShape && reactFlowInstance) {
             console.log('Creating shape:', selectedShape);
             createNewShape(selectedShape);
+            onShapeCreated();
         }
-    }, [selectedShape, reactFlowInstance, createNewShape]);
+    }, [selectedShape, reactFlowInstance, createNewShape, onShapeCreated]);
 
     const getShapeStyle = (shapeType: string) => {
         const baseStyle = {
@@ -298,7 +300,12 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape}) => {
                     },
                 }}
                 connectionLineType={ConnectionLineType.Step}
-                fitView
+                defaultViewport={{
+                    x: 0,
+                    y: 0,
+                    zoom: 1
+                }}
+                fitView={false}
                 minZoom={0.1}
                 maxZoom={10}
                 connectionMode={ConnectionMode.Loose}

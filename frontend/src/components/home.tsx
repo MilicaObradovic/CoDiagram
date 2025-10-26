@@ -25,14 +25,8 @@ function Home() {
         setToolbarState(prev => ({...prev, selectedTool: 'shape'}));
     };
 
-    const handleUndo = () => {
-        // Implement undo logic
-        console.log('Undo');
-    };
-
-    const handleRedo = () => {
-        // Implement redo logic
-        console.log('Redo');
+    const handleShapeCreated = () => {
+        setSelectedShape(undefined);
     };
 
     return (
@@ -41,10 +35,6 @@ function Home() {
                 toolbarState={toolbarState}
                 onToolbarStateChange={handleToolbarStateChange}
                 onShapeSelect={handleShapeSelect}
-                onUndo={handleUndo}
-                onRedo={handleRedo}
-                canUndo={true}
-                canRedo={false}
             />
 
             <div className="flex flex-1">
@@ -62,6 +52,7 @@ function Home() {
                         <DiagramCanvas
                             toolbarState={toolbarState}
                             selectedShape={selectedShape!}
+                            onShapeCreated={handleShapeCreated}
                         />
                     </ReactFlowProvider>
                 </div>
