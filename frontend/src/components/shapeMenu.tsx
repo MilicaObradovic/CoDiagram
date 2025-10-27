@@ -1,5 +1,22 @@
 import React, {useMemo, useState} from 'react';
 import {
+    Square,
+    Circle,
+    Triangle,
+    Diamond,
+    Type,
+    Database,
+    Box,
+    User,
+    Circle as CircleIcon,
+    Settings,
+    CircleDot,
+    FileText,
+    Workflow,
+    HardDrive,
+    ChevronDown
+} from 'lucide-react';
+import {
     type ShapeType,
     type DiagramCategory,
     type ShapeDefinition,
@@ -22,37 +39,40 @@ const ShapeMenu: React.FC<ShapeMenuProps> = ({onShapeSelect, selectedShape}) => 
 
     const shapeDefinitions: ShapeDefinition[] = useMemo(() => [
         // Basic Shapes
-        {type: ShapeTypes.RECTANGLE, icon: '□', name: 'Rectangle', category: DiagramCategories.BASIC_SHAPES},
-        {type: ShapeTypes.CIRCLE, icon: '○', name: 'Circle', category: DiagramCategories.BASIC_SHAPES},
-        {type: ShapeTypes.TRIANGLE, icon: '△', name: 'Triangle', category: DiagramCategories.BASIC_SHAPES},
-        {type: ShapeTypes.DIAMOND, icon: '◇', name: 'Diamond', category: DiagramCategories.BASIC_SHAPES},
-        {type: ShapeTypes.TEXT, icon: 'T', name: 'Text', category: DiagramCategories.BASIC_SHAPES},
-        {type: ShapeTypes.LINE, icon: '─', name: 'Line', category: DiagramCategories.BASIC_SHAPES},
-        {type: ShapeTypes.ARROW, icon: '→', name: 'Arrow', category: DiagramCategories.BASIC_SHAPES},
-        {type: ShapeTypes.CYLINDER, icon: '⛁', name: 'Cylinder', category: DiagramCategories.BASIC_SHAPES},
+        {type: ShapeTypes.RECTANGLE, icon: Square, name: 'Rectangle', category: DiagramCategories.BASIC_SHAPES},
+        {type: ShapeTypes.CIRCLE, icon: Circle, name: 'Circle', category: DiagramCategories.BASIC_SHAPES},
+        {type: ShapeTypes.TRIANGLE, icon: Triangle, name: 'Triangle', category: DiagramCategories.BASIC_SHAPES},
+        {type: ShapeTypes.DIAMOND, icon: Diamond, name: 'Diamond', category: DiagramCategories.BASIC_SHAPES},
+        {type: ShapeTypes.TEXT, icon: Type, name: 'Text', category: DiagramCategories.BASIC_SHAPES},
+        {type: ShapeTypes.CYLINDER, icon: Database, name: 'Cylinder', category: DiagramCategories.BASIC_SHAPES},
 
         // UML Diagrams
-        {type: ShapeTypes.UML_CLASS, icon: 'C', name: 'Class', category: DiagramCategories.UML},
-        {type: ShapeTypes.UML_ACTOR, icon: 'A', name: 'Actor', category: DiagramCategories.UML},
-        {type: ShapeTypes.UML_USE_CASE, icon: 'U', name: 'Use Case', category: DiagramCategories.UML},
-        {type: ShapeTypes.UML_COMPONENT, icon: '⚙', name: 'Component', category: DiagramCategories.UML},
+        {type: ShapeTypes.UML_CLASS, icon: Box, name: 'Class', category: DiagramCategories.UML},
+        {type: ShapeTypes.UML_ACTOR, icon: User, name: 'Actor', category: DiagramCategories.UML},
+        {type: ShapeTypes.UML_USE_CASE, icon: CircleIcon, name: 'Use Case', category: DiagramCategories.UML},
+        {type: ShapeTypes.UML_COMPONENT, icon: Settings, name: 'Component', category: DiagramCategories.UML},
 
         // Mind Maps
-        {type: ShapeTypes.MIND_MAP_CENTRAL, icon: '●', name: 'Central Idea', category: DiagramCategories.MIND_MAP},
-        {type: ShapeTypes.MIND_MAP_TOPIC, icon: '○', name: 'Main Topic', category: DiagramCategories.MIND_MAP},
-        {type: ShapeTypes.MIND_MAP_SUBTOPIC, icon: '◐', name: 'Subtopic', category: DiagramCategories.MIND_MAP},
+        {
+            type: ShapeTypes.MIND_MAP_CENTRAL,
+            icon: CircleDot,
+            name: 'Central Idea',
+            category: DiagramCategories.MIND_MAP
+        },
+        {type: ShapeTypes.MIND_MAP_TOPIC, icon: Circle, name: 'Main Topic', category: DiagramCategories.MIND_MAP},
+        {type: ShapeTypes.MIND_MAP_SUBTOPIC, icon: CircleIcon, name: 'Subtopic', category: DiagramCategories.MIND_MAP},
 
         // Conceptual Diagrams
-        {type: ShapeTypes.CONCEPT_ENTITY, icon: 'E', name: 'Entity', category: DiagramCategories.CONCEPTUAL},
-        {type: ShapeTypes.CONCEPT_PROCESS, icon: 'P', name: 'Process', category: DiagramCategories.CONCEPTUAL},
-        {type: ShapeTypes.CONCEPT_DATABASE, icon: '🗄', name: 'Database', category: DiagramCategories.CONCEPTUAL},
+        {type: ShapeTypes.CONCEPT_ENTITY, icon: FileText, name: 'Entity', category: DiagramCategories.CONCEPTUAL},
+        {type: ShapeTypes.CONCEPT_PROCESS, icon: Workflow, name: 'Process', category: DiagramCategories.CONCEPTUAL},
+        {type: ShapeTypes.CONCEPT_DATABASE, icon: HardDrive, name: 'Database', category: DiagramCategories.CONCEPTUAL},
     ], []);
 
     const categories = useMemo(() => [
-        {id: DiagramCategories.BASIC_SHAPES, name: 'Basic Shapes', icon: '🟦'},
-        {id: DiagramCategories.UML, name: 'UML Diagrams', icon: '📐'},
-        {id: DiagramCategories.MIND_MAP, name: 'Mind Maps', icon: '🧠'},
-        {id: DiagramCategories.CONCEPTUAL, name: 'Conceptual Diagrams', icon: '🔗'},
+        {id: DiagramCategories.BASIC_SHAPES, name: 'Basic Shapes', icon: Square},
+        {id: DiagramCategories.UML, name: 'UML Diagrams', icon: Box},
+        {id: DiagramCategories.MIND_MAP, name: 'Mind Maps', icon: CircleDot},
+        {id: DiagramCategories.CONCEPTUAL, name: 'Conceptual', icon: Workflow},
     ], []);
 
     const toggleCategory = (categoryId: DiagramCategory) => {
@@ -71,64 +91,62 @@ const ShapeMenu: React.FC<ShapeMenuProps> = ({onShapeSelect, selectedShape}) => 
     };
 
     return (
-        <div className="w-64 bg-white border-r border-gray-200 h-full flex flex-col">
+        <div className="w-full bg-background  border-border h-full flex flex-col">
             {/* Header */}
-            <div className="p-4 border-b border-gray-200">
-                <h3 className="text-sm font-semibold text-gray-700">Diagram Elements</h3>
+            <div className="px-4 py-3 border-b border-border">
+                <h3 className="text-sm font-medium text-foreground">Elements</h3>
             </div>
 
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto">
-                <div className="p-4 space-y-4">
+                <div className="p-2 space-y-1.5">
                     {categories.map((category) => {
                         const shapes = getShapesByCategory(category.id);
                         const isOpen = openCategories[category.id];
+                        const CategoryIcon = category.icon;
 
                         return (
-                            <div key={category.id} className="border border-gray-200 rounded-lg">
+                            <div key={category.id} className="border border-border rounded-md overflow-hidden">
                                 {/* Category Header */}
                                 <button
                                     onClick={() => toggleCategory(category.id)}
-                                    className="w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-t-lg transition-colors"
+                                    className="w-full flex items-center justify-between px-3 py-2 hover:bg-muted/50 transition-colors"
                                 >
                                     <div className="flex items-center gap-2">
-                                        <span className="text-base">{category.icon}</span>
-                                        <span className="text-sm font-medium text-gray-700">
-                                            {category.name}
-                                        </span>
+                                        <CategoryIcon className="h-4 w-4 text-muted-foreground"/>
+                                        <span className="text-sm font-medium text-foreground">
+                      {category.name}
+                    </span>
                                     </div>
-                                    <svg
-                                        className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                              d="M19 9l-7 7-7-7"/>
-                                    </svg>
+                                    <ChevronDown
+                                        className={`h-4 w-4 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                                    />
                                 </button>
 
                                 {/* Category Content */}
                                 {isOpen && (
-                                    <div className="p-3 border-t border-gray-200">
-                                        <div className="grid grid-cols-3 gap-2">
-                                            {shapes.map((shape) => (
-                                                <button
-                                                    key={shape.type}
-                                                    onClick={() => handleShapeSelect(shape.type)}
-                                                    className={`flex flex-col items-center justify-center p-2 rounded border transition-all hover:bg-gray-50 hover:border-gray-300 ${
-                                                        selectedShape === shape.type
-                                                            ? 'bg-blue-50 border-blue-300 shadow-sm'
-                                                            : 'bg-white border-gray-200'
-                                                    }`}
-                                                    title={shape.name}
-                                                >
-                                                    <span className="text-lg mb-1">{shape.icon}</span>
-                                                    <span className="text-xs text-gray-600 text-center leading-tight">
-                                                        {shape.name}
-                                                    </span>
-                                                </button>
-                                            ))}
+                                    <div className="p-2 border-t border-border bg-muted/20">
+                                        <div className="grid grid-cols-3 gap-1">
+                                            {shapes.map((shape) => {
+                                                const ShapeIcon = shape.icon;
+                                                return (
+                                                    <button
+                                                        key={shape.type}
+                                                        onClick={() => handleShapeSelect(shape.type)}
+                                                        className={`flex flex-col items-center justify-center p-2 rounded transition-colors ${
+                                                            selectedShape === shape.type
+                                                                ? 'bg-primary text-primary-foreground'
+                                                                : 'hover:bg-muted'
+                                                        }`}
+                                                        title={shape.name}
+                                                    >
+                                                        <ShapeIcon className="h-5 w-5 mb-1"/>
+                                                        <span className="text-[10px] text-center leading-tight">
+                              {shape.name}
+                            </span>
+                                                    </button>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 )}
@@ -138,15 +156,6 @@ const ShapeMenu: React.FC<ShapeMenuProps> = ({onShapeSelect, selectedShape}) => 
                 </div>
             </div>
 
-            {/* Selected Shape Info */}
-            {selectedShape && (
-                <div className="p-4 border-t border-gray-200 bg-gray-50">
-                    <p className="text-xs text-gray-600 text-center">
-                        Selected: <span
-                        className="font-medium">{shapeDefinitions.find(s => s.type === selectedShape)?.name}</span>
-                    </p>
-                </div>
-            )}
         </div>
     );
 };

@@ -48,3 +48,59 @@
 .shape-hover:hover {
   transform: scale(1.05);
 }
+/* Override React Flow's default node background */
+.react-flow__node-default {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.react-flow__node {
+  background: transparent !important;
+}
+
+/* Ensure the node container is transparent */
+.react-flow__node.selected {
+  background: transparent !important;
+}
+
+.react-flow__node.selectable {
+  background: transparent !important;
+}
+/* Override React Flow's default node styles */
+.react-flow__node-default {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.react-flow__node {
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Remove any internal padding or margins */
+.react-flow__node.selected {
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+.react-flow__node.selectable {
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+/* Remove the transform container if it exists */
+.react-flow__node .react-flow__node-default {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Ensure the node content takes full space */
+.react-flow__node > div {
+  padding: 0 !important;
+  margin: 0 !important;
+}

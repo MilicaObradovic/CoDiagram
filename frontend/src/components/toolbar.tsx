@@ -12,12 +12,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                                              toolbarState,
                                              onToolbarStateChange,
                                          }) => {
-    const tools = [
-        {id: 'select', name: 'Select', icon: '↦', type: 'select'},
-        {id: 'hand', name: 'Hand', icon: '✋', type: 'hand'},
-        {id: 'text', name: 'Text', icon: 'T', type: 'text'},
-        {id: 'connection', name: 'Connection', icon: '🔗', type: 'connection'},
-    ];
+    const tools = [];
 
     const navigate = useNavigate();
 
@@ -34,9 +29,25 @@ const Toolbar: React.FC<ToolbarProps> = ({
     };
 
     return (
-        <div className="bg-gray-800 text-white p-3 flex items-center justify-between shadow-lg">
-            {/* Left Section - Tools & Shapes */}
+        <div className="bg-gray-800  text-white p-3 flex items-center justify-between shadow-lg">
+            {/* Left Section - Logo, Title & Tools */}
             <div className="flex items-center space-x-4">
+                {/* Logo and Title */}
+                <div className="flex w-72 items-center justify-around ">
+                    {/* Logo SVG */}
+                    <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center">
+                            <img
+                                src="/logo.png"
+                                alt="CoDiagram Logo"
+                                className="w-full h-full object-contain"
+                            />
+                        </div>
+                        {/* Title */}
+                        <h1 className="text-xl font-bold text-white">CoDiagram</h1>
+                    </div>
+                </div>
+
                 <div className="w-px h-6 bg-gray-600"></div>
 
                 {/* Main Tools */}
@@ -55,19 +66,6 @@ const Toolbar: React.FC<ToolbarProps> = ({
                             {tool.icon}
                         </button>
                     ))}
-                </div>
-
-                <div className="w-px h-6 bg-gray-600"></div>
-
-                {/* Shape Picker Trigger */}
-                <div className="relative group">
-                    <button className="p-2 rounded hover:bg-gray-700 text-lg" title="Shapes">
-                        ◰
-                    </button>
-                    <div
-                        className="absolute top-full left-0 mt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                        {/* ShapeMenu will be rendered here */}
-                    </div>
                 </div>
             </div>
 
