@@ -15,8 +15,8 @@ export type StoreState = {
     updateEdgeLabel: (nodeId: string, label: string) => void;
     undo: () => void;
     redo: () => void;
-    canUndo: () => void;
-    canRedo: () => void;
+    canUndo: () => boolean;
+    canRedo: () => boolean;
     onEdgeClick: (edgeId: string, edgeType:EdgeType) => void;
 };
 

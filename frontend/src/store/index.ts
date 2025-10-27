@@ -3,7 +3,7 @@ import type {StoreState} from '../types/store.ts';
 import {UndoRedo} from './undo-redo';
 import {addEdge, applyNodeChanges, type NodeChange, type Connection, type Node} from "@xyflow/react";
 import {applyEdgeChanges, type Edge, type EdgeChange} from "reactflow";
-import type {EdgeType} from "../types/diagram.ts";
+import type {EdgeType, LineStyle} from "../types/diagram.ts";
 
 UndoRedo.addHistory({nodes: [], edges: []});
 
@@ -47,14 +47,23 @@ const useStore = create<StoreState>((set, get) => ({
             UndoRedo.addHistory({nodes: get().nodes, edges: get().edges});
         }
     },
-    onEdgeClick: (edgeId: string, edgeType: EdgeType) => {
+    onEdgeClick: (edgeId: string, edgeType: EdgeType, lineStyle?: LineStyle) => {
         const edges = get().edges;
         const updatedEdges = edges.map(edge => {
             if (edge.id === edgeId) {
-                return {
+                const updatedEdge = {
                     ...edge,
                     type: edgeType, // Update the edge type
                 };
+
+                if (lineStyle) {
+                    updatedEdge.data = {
+                        ...edge.data,
+                        lineStyle: lineStyle
+                    };
+                }
+
+                return updatedEdge;
             }
             return edge;
         });

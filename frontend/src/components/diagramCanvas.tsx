@@ -12,7 +12,14 @@ import {
     type ReactFlowInstance
 } from '@xyflow/react';
 import 'reactflow/dist/style.css';
-import {type CustomNodeData, type EdgeType, EdgeTypes, type ShapeType, type ToolbarState} from "../types/diagram.ts";
+import {
+    type CustomNodeData,
+    type EdgeType,
+    EdgeTypes,
+    type LineStyle, LineStyles,
+    type ShapeType,
+    type ToolbarState
+} from "../types/diagram.ts";
 import CustomNodeDiv from './customNodeDiv.tsx'
 import DownloadButton from "./downloadButton.tsx";
 import '@xyflow/react/dist/style.css';
@@ -44,7 +51,8 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
     const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
     const [editText, setEditText] = useState('');
     const [selectedEdgeType, setSelectedEdgeType] = useState<EdgeType>(EdgeTypes.STEP);
-    const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
+    const [selectedEdgeId, setSelectedEdgeId] = useState<string | undefined>(undefined);
+    const [selectedLineStyle, setSelectedLineStyle] = useState<LineStyle>(LineStyles.SOLID);
 
 
     const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -299,17 +307,36 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
                 return ConnectionLineType.Step;
         }
     }, []);
+    const getConnectionLineStyle = useCallback((lineStyle: LineStyle) => {
+        const baseStyle = {
+            stroke: '#000000',
+            strokeWidth: 1,
+        };
+
+        switch (lineStyle) {
+            case LineStyles.DASHED:
+                return {...baseStyle, strokeDasharray: '5,5'};
+            case LineStyles.DOTTED:
+                return {...baseStyle, strokeDasharray: '2,2'};
+            case LineStyles.SOLID:
+            default:
+                return {...baseStyle, strokeDasharray: 'none'};
+        }
+    }, []);
 
     // Update defaultEdgeOptions based on selected edge type
     const defaultEdgeOptions = useMemo(() => ({
         type: selectedEdgeType,
+        data: {
+            lineStyle: selectedLineStyle
+        },
         markerEnd: {
             type: 'arrowclosed',
             color: '#000000',
             width: 30,
             height: 30,
         },
-    }), [selectedEdgeType]);
+    }), [selectedEdgeType, selectedLineStyle]);
 
     return (
         <div style={{width: '100%', height: '100%'}} className="flex">
@@ -326,16 +353,17 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
                     onConnect={onConnect}
                     onInit={onInit}
                     onKeyDown={(e) => onKeyDown(e)}
-                    onEdgeClick={(event, edge) => {
+                    onEdgeClick={(_event, edge) => {
                         setSelectedEdgeId(edge.id);
                         setSelectedEdgeType(edge.type as EdgeType || EdgeTypes.STEP);
+                        setSelectedLineStyle(edge.data?.lineStyle || LineStyles.SOLID);
                     }}
                     onPaneClick={() => {
-                        // Clear edge selection when clicking on empty space
-                        setSelectedEdgeId(null);
+                        setSelectedEdgeId(undefined);
                     }}
                     defaultEdgeOptions={defaultEdgeOptions}
                     connectionLineType={getConnectionLineType(selectedEdgeType)}
+                    connectionLineStyle={getConnectionLineStyle(selectedLineStyle)}
                     defaultViewport={{
                         x: 0,
                         y: 0,
@@ -361,12 +389,14 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
                         </ControlButton>
                         <DownloadButton/>
                     </Controls>
-                    <Panel position="top-right" style={{ right: 10, top: '50%', transform: 'translateY(-50%)' }}>
+                    <Panel position="top-right" style={{right: 10, top: '30%', transform: 'translateY(-50%)'}}>
                         <EdgeToolbar
                             selectedEdgeType={selectedEdgeType}
                             onEdgeTypeSelect={setSelectedEdgeType}
                             selectedEdgeId={selectedEdgeId}
-                            onUpdateEdgeType={onEdgeClick}
+                            onUpdateEdge={onEdgeClick}
+                            selectedLineStyle={selectedLineStyle}
+                            onLineStyleSelect={setSelectedLineStyle}
                         />
                     </Panel>
                     <MiniMap

@@ -106,3 +106,13 @@ export const EdgeTypes = {
     STRAIGHT: 'straight' as EdgeType,
     BEZIER: 'bezier' as EdgeType,
 }
+export type LineStyle =
+    | 'solid'
+    | 'dashed'
+    | 'dotted';
+
+export const LineStyles = {
+    SOLID: 'solid' as LineStyle,
+    DASHED: 'dashed' as LineStyle,
+    DOTTED: 'dotted' as LineStyle,
+}

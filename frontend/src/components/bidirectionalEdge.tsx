@@ -11,7 +11,7 @@ export default function CustomEdge({
                                        targetY,
                                        sourcePosition,
                                        targetPosition,
-                                       markerEnd, selected, type
+                                       markerEnd, selected, type, data
                                    }: EdgeProps) {
     const edgePathParams = {
         sourceX,
@@ -39,8 +39,13 @@ export default function CustomEdge({
             [path] = getSmoothStepPath({...edgePathParams, borderRadius: 0});
             break;
     }
+    const lineStyle = data?.lineStyle || 'solid';
+    const strokeDasharray =
+        lineStyle === 'dashed' ? '5,5' :
+            lineStyle === 'dotted' ? '2,2' : 'none';
     return <BaseEdge path={path} markerEnd={markerEnd} style={{
         stroke: '#000000',
-        strokeWidth: selected ? 0.65 : 0.5,
+        strokeWidth: selected ? 0.7 : 0.5,
+        strokeDasharray,
     }}/>;
 }
