@@ -15,7 +15,7 @@ import 'reactflow/dist/style.css';
 import {
     type CustomNodeData,
     type EdgeType,
-    EdgeTypes,
+    EdgeTypes, getShapeDimensions,
     type LineStyle, LineStyles,
     type ShapeType,
     type ToolbarState
@@ -76,6 +76,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
             x: window.innerWidth / 2,
             y: window.innerHeight / 2,
         });
+        const dimensions = getShapeDimensions(shapeType);
 
         const newNode: Node = {
             id: `${shapeType}-${Date.now()}`,
@@ -85,6 +86,8 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
                 label: `${shapeType.charAt(0).toUpperCase() + shapeType.slice(1)}`,
                 shapeType: shapeType,
             },
+            width: dimensions.width,
+            height: dimensions.height,
         };
         const currentNodes = useStore.getState().nodes;
         useStore.getState().setNodes([...currentNodes, newNode]);
@@ -238,7 +241,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
                         nodeBorderRadius={8}
                         nodeColor={(node) => {
                             // Color nodes based on their background color
-                            return node.style?.background as string || '#6ede87';
+                            return node.style?.background as string || 'gray';
                         }}
                         position="bottom-right"
                         style={{

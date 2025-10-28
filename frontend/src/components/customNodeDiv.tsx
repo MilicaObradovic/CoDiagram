@@ -27,105 +27,145 @@ const CustomNodeDiv = ({
     const shapeType = data.shapeType || 'rectangle';
     const width = currentNode?.width || 100;
     const height = currentNode?.height || 60;
+    console.log(width, height);
 
-    // const handleSave = useCallback(() => {
-    //     useStore.getState().updateNodeLabel(id, editText);
-    //     setEditingNodeId(null);
-    // }, [id, editText, setEditingNodeId, setEditText]);
-    //
-    // const handleCancel = useCallback(() => {
-    //     setEditingNodeId(null);
-    //     setEditText('');
-    // }, [setEditingNodeId, setEditText]);
+    const handleSave = useCallback(() => {
+        useStore.getState().updateNodeLabel(id, editText);
+        setEditingNodeId(null);
+    }, [id, editText, setEditingNodeId, setEditText]);
 
-    // if (editingNodeId === id) {
-    //     return (
-    //         <>
-    //             <NodeResizer
-    //                 color="bg-blue-600"
-    //                 isVisible={selected}
-    //                 minWidth={100}
-    //                 minHeight={30}
-    //             />
-    //             <textarea
-    //                 ref={(textarea) => {
-    //                     if (textarea) {
-    //                         // Auto-resize to fit content but within node bounds
-    //                         textarea.style.height = 'auto';
-    //                         const nodeHeight = 60;
-    //                         textarea.style.height = Math.min(textarea.scrollHeight, nodeHeight) + 'px';
-    //
-    //                         // Set cursor to the end of text
-    //                         textarea.focus();
-    //                         textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-    //                     }
-    //                 }}
-    //                 value={editText}
-    //                 onChange={(e) => {
-    //                     setEditText(e.target.value);
-    //                     // Auto-resize as user types
-    //                     const textarea = e.target;
-    //                     textarea.style.height = 'auto';
-    //                     const nodeHeight = 60;
-    //                     textarea.style.height = Math.min(textarea.scrollHeight, nodeHeight) + 'px';
-    //                 }}
-    //                 onKeyDown={(e) => {
-    //                     if (e.key === 'Enter' && !e.shiftKey) {
-    //                         e.preventDefault();
-    //                         handleSave();
-    //                     } else if (e.key === 'Escape') {
-    //                         e.preventDefault();
-    //                         handleCancel();
-    //                     }
-    //                 }}
-    //                 onBlur={handleCancel}
-    //                 className="w-full h-full bg-transparent text-inherit focus:outline-none resize-none border-none placeholder-gray-100 placeholder:italic placeholder:opacity-75"
-    //                 style={{
-    //                     textAlign: 'left',
-    //                     fontFamily: 'inherit',
-    //                     lineHeight: '1.4',
-    //                     fontSize: 'inherit',
-    //                     fontWeight: 'inherit',
-    //                 }}
-    //                 placeholder="Type here..."
-    //             />
-    //             <Handle
-    //                 type="source"
-    //                 position={Position.Top}
-    //                 className="w-3 h-3 bg-blue-500" id="top"
-    //             />
-    //             <Handle
-    //                 type="source"
-    //                 position={Position.Bottom}
-    //                 className="w-3 h-3 bg-green-500" id="bottom"
-    //             />
-    //             <Handle
-    //                 type="source"
-    //                 position={Position.Left}
-    //                 className="w-3 h-3 bg-blue-500" id="left"
-    //             />
-    //             <Handle
-    //                 type="source"
-    //                 position={Position.Right}
-    //                 className="w-3 h-3 bg-green-500" id="right"
-    //             />
-    //         </>
-    //     );
-    // }
+    const handleCancel = useCallback(() => {
+        setEditingNodeId(null);
+        setEditText('');
+    }, [setEditingNodeId, setEditText]);
+
+    if (editingNodeId === id) {
+        return (
+            <div
+                className="text-foreground"
+                style={{
+                    width: '100%',
+                    height: '100%',
+                    background: 'transparent',
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                }}
+            >
+                <NodeResizer
+                    color="#3b82f6"
+                    isVisible={selected}
+                    minWidth={50}
+                    minHeight={30}
+                    handleStyle={{border: '2px solid #3b82f6', background: 'white'}}
+                />
+
+                {/* Shape stays in background */}
+                <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    pointerEvents: 'none' // Allow clicks to pass through to textarea
+                }}>
+                    <ShapeRenderer
+                        shapeType={shapeType}
+                        width={width}
+                        height={height}
+                        currentLabel={""}
+                        selected={selected}
+                    />
+                </div>
+
+                {/* Textarea overlay */}
+                <textarea
+                    ref={(textarea) => {
+                        if (textarea) {
+                            textarea.style.height = 'auto';
+                            const nodeHeight = 60;
+                            textarea.style.height = Math.min(textarea.scrollHeight, nodeHeight) + 'px';
+                            textarea.focus();
+                            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+                        }
+                    }}
+                    value={editText}
+                    onChange={(e) => {
+                        setEditText(e.target.value);
+                        const textarea = e.target;
+                        textarea.style.height = 'auto';
+                        const nodeHeight = 60;
+                        textarea.style.height = Math.min(textarea.scrollHeight, nodeHeight) + 'px';
+                    }}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSave();
+                        } else if (e.key === 'Escape') {
+                            e.preventDefault();
+                            handleCancel();
+                        }
+                    }}
+                    onBlur={handleCancel}
+                    className="w-full h-full bg-transparent text-inherit focus:outline-none resize-none border-none placeholder-gray-100 placeholder:italic placeholder:opacity-75"
+                    style={{
+                        textAlign: 'center',
+                        fontFamily: 'inherit',
+                        lineHeight: '1.4',
+                        fontSize: 'inherit',
+                        fontWeight: 'inherit',
+                        position: 'relative',
+                        zIndex: 10,
+                        background: 'transparent',
+                    }}
+                    placeholder="Type here..."
+                />
+
+                <Handle
+                    type="source"
+                    position={Position.Top}
+                    className="w-3 h-3 bg-blue-500"
+                    id="top"
+                />
+                <Handle
+                    type="source"
+                    position={Position.Bottom}
+                    className="w-3 h-3 bg-green-500"
+                    id="bottom"
+                />
+                <Handle
+                    type="source"
+                    position={Position.Left}
+                    className="w-3 h-3 bg-blue-500"
+                    id="left"
+                />
+                <Handle
+                    type="source"
+                    position={Position.Right}
+                    className="w-3 h-3 bg-green-500"
+                    id="right"
+                />
+            </div>
+        );
+    }
 
     return (
         <div
             className="text-foreground"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            style={{ width: '100%', height: '100%', background: 'transparent' }}
+            style={{width: '100%', height: '100%', background: 'transparent'}}
         >
             <NodeResizer
                 color="#3b82f6"
                 isVisible={selected}
                 minWidth={50}
                 minHeight={30}
-                handleStyle={{ border: '2px solid #3b82f6', background: 'transparent' }}
+                handleStyle={{border: '2px solid #3b82f6', background: 'transparent'}}
             />
 
             <Handle

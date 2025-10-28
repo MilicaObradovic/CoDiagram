@@ -81,9 +81,6 @@ export const getShapeDimensions = (shapeType: ShapeType): { width: number; heigh
     return dimensions[shapeType] || { width: 140, height: 80 };
 };
 
-/**
- * Get the default label for a shape type
- */
 export const getDefaultShapeLabel = (shapeType: ShapeType): string => {
     const labels: Record<string, string> = {
         rectangle: 'Rectangle',
