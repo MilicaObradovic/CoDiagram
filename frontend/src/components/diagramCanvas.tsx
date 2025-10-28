@@ -26,6 +26,9 @@ import '@xyflow/react/dist/style.css';
 import CustomEdge from './bidirectionalEdge.tsx';
 import {useStore} from '../store';
 import EdgeToolbar from "./EdgeToolbar.tsx";
+import {WebsocketProvider} from "y-websocket";
+import * as Y from 'yjs';
+
 
 interface DiagramCanvasProps {
     toolbarState: ToolbarState;
@@ -45,7 +48,9 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
         redo,
         canUndo,
         canRedo,
-        onEdgeClick
+        onEdgeClick,
+        setNodes,
+        setEdges
     } = useStore();
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
     const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
@@ -53,6 +58,162 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
     const [selectedEdgeType, setSelectedEdgeType] = useState<EdgeType>(EdgeTypes.STEP);
     const [selectedEdgeId, setSelectedEdgeId] = useState<string | undefined>(undefined);
     const [selectedLineStyle, setSelectedLineStyle] = useState<LineStyle>(LineStyles.SOLID);
+
+    // Yjs state
+    const [yDoc, setYDoc] = useState<Y.Doc | null>(null);
+    const [provider, setProvider] = useState<WebsocketProvider | null>(null);
+
+    // Yjs initialization
+    useEffect(() => {
+        const doc = new Y.Doc();
+
+        const wsProvider = new WebsocketProvider(
+            'ws://localhost:1234/diagram-room-1',
+            '', // Prazan room name
+            doc
+        );
+
+        const yNodes = doc.getMap('nodes');
+        const yEdges = doc.getMap('edges');
+
+        console.log('Y.js initialized with simple server');
+        const originalOnNodesChange = useStore.getState().onNodesChange;
+        const originalOnEdgesChange = useStore.getState().onEdgesChange;
+        const originalOnConnect = useStore.getState().onConnect;
+
+        // Y.js -> React Flow
+        yNodes.observe(() => {
+            const yjsNodes = Array.from(yNodes.values());
+            console.log('Y.js -> React Flow:', yjsNodes.length, 'nodes');
+            setNodes(yjsNodes);
+        });
+
+        yEdges.observe(() => {
+            const yjsEdges = Array.from(yEdges.values());
+            console.log('Y.js -> React Flow:', yjsEdges.length, 'edges');
+            setEdges(yjsEdges);
+        });
+        useStore.setState({
+            onNodesChange: (changes) => {
+                console.log('React Flow nodes changes:', changes);
+
+                changes.forEach(change => {
+                    console.log(`Processing change: ${change.type}`, change);
+
+                    if (change.type === 'add') {
+                        yNodes.set(change.item.id, change.item);
+                        console.log('Added node to Y.js:', change.item.id);
+
+                    } else if (change.type === 'remove') {
+                        yNodes.delete(change.id);
+                        console.log('Removed node from Y.js:', change.id);
+
+                    } else if (change.type === 'position') {
+                        console.log('Node position change:', change.id, change.position);
+
+                        const existingNode = yNodes.get(change.id);
+                        if (existingNode) {
+                            const updatedNode = {
+                                ...existingNode,
+                                position: change.position
+                            };
+                            yNodes.set(change.id, updatedNode);
+                            console.log('✅ Updated node position in Y.js');
+                        }
+
+                    } else if (change.type === 'dimensions') {
+                        console.log('Node dimensions change:', change.id, change.dimensions);
+
+                        const existingNode = yNodes.get(change.id);
+                        if (existingNode && change.dimensions) {
+                            const updatedNode = {
+                                ...existingNode,
+                                width: change.dimensions.width,
+                                height: change.dimensions.height
+                            };
+                            yNodes.set(change.id, updatedNode);
+                            console.log('Updated node dimensions in Y.js');
+                        }
+
+                    } else if (change.type === 'select') {
+                        console.log('Node select change (ignoring):', change.id, change.selected);
+                    }
+                });
+
+                originalOnNodesChange(changes);
+            },
+
+            onEdgesChange: (changes) => {
+                console.log('React Flow edges changes:', changes);
+
+                changes.forEach(change => {
+                    if (change.type === 'add') {
+                        yEdges.set(change.item.id, change.item);
+                        console.log('Added edge to Y.js:', change.item.id);
+                    } else if (change.type === 'remove') {
+                        yEdges.delete(change.id);
+                        console.log('Removed edge from Y.js:', change.id);
+                    }
+                });
+
+                originalOnEdgesChange(changes);
+            },
+
+            onConnect: (connection) => {
+                const edgesBefore = useStore.getState().edges;
+                originalOnConnect(connection);
+
+                // wait for state update-uje, then find new edge
+                setTimeout(() => {
+                    const edgesAfter = useStore.getState().edges;
+                    console.log('📊 Edges after connection:', edgesAfter.length);
+
+                    // find edge that is added (diff btw before/after)
+                    const newEdge = edgesAfter.find(edgeAfter =>
+                        !edgesBefore.some(edgeBefore => edgeBefore.id === edgeAfter.id)
+                    );
+
+                    if (newEdge) {
+                        console.log('Found NEW edge:', newEdge);
+                        const updatedEdge = {
+                            ...newEdge,
+                            type: selectedEdgeType,
+                            data: {
+                                ...newEdge.data,
+                                lineStyle: selectedLineStyle
+                            }
+                        };
+
+                        yEdges.set(updatedEdge.id, updatedEdge);
+                        console.log('Updated edge in Y.js:', updatedEdge.id);
+
+                        const updatedEdges = edgesAfter.map(edge =>
+                            edge.id === newEdge.id ? updatedEdge : edge
+                        );
+                        useStore.getState().setEdges(updatedEdges);
+
+                    } else {
+                        console.error('Could not find newly created edge');
+                        console.log('Before:', edgesBefore.map(e => e.id));
+                        console.log('After:', edgesAfter.map(e => e.id));
+                    }
+                }, 10);
+            }
+        });
+
+        setYDoc(doc);
+        setProvider(wsProvider);
+
+        return () => {
+            useStore.setState({
+                onNodesChange: originalOnNodesChange,
+                onEdgesChange: originalOnEdgesChange,
+                onConnect: originalOnConnect
+            });
+            wsProvider.destroy();
+            doc.destroy();
+        };
+    }, [setNodes, setEdges, selectedEdgeType, selectedLineStyle]);
 
 
     const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -70,7 +231,10 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
     }, []);
 
     const createNewShape = useCallback((shapeType: string) => {
-        if (!reactFlowInstance) return;
+        if (!reactFlowInstance || !yDoc) {
+            console.log('Cannot create shape: missing reactFlowInstance or yDoc');
+            return;
+        }
 
         const position = reactFlowInstance.screenToFlowPosition({
             x: window.innerWidth / 2,
@@ -89,9 +253,16 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
             width: dimensions.width,
             height: dimensions.height,
         };
-        const currentNodes = useStore.getState().nodes;
-        useStore.getState().setNodes([...currentNodes, newNode]);
-    }, [reactFlowInstance]);
+
+        // add to Yjs
+        const yNodes = yDoc.getMap('nodes');
+        yNodes.set(newNode.id, newNode);
+
+        console.log('✅ Added new shape via Y.js:', newNode.id);
+        console.log('📊 Y.js nodes after creation:', Array.from(yNodes.keys()));
+
+        onShapeCreated();
+    }, [reactFlowInstance, yDoc, onShapeCreated]);
 
     useEffect(() => {
         console.log('selectedShape changed:', selectedShape);
