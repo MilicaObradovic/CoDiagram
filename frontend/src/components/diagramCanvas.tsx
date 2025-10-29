@@ -118,7 +118,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
                                 position: change.position
                             };
                             yNodes.set(change.id, updatedNode);
-                            console.log('✅ Updated node position in Y.js');
+                            console.log('Updated node position in Y.js');
                         }
 
                     } else if (change.type === 'dimensions') {
@@ -163,10 +163,10 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
                 const edgesBefore = useStore.getState().edges;
                 originalOnConnect(connection);
 
-                // wait for state update-uje, then find new edge
+                // wait for state update, then find new edge
                 setTimeout(() => {
                     const edgesAfter = useStore.getState().edges;
-                    console.log('📊 Edges after connection:', edgesAfter.length);
+                    console.log('Edges after connection:', edgesAfter.length);
 
                     // find edge that is added (diff btw before/after)
                     const newEdge = edgesAfter.find(edgeAfter =>
@@ -187,10 +187,6 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
                         yEdges.set(updatedEdge.id, updatedEdge);
                         console.log('Updated edge in Y.js:', updatedEdge.id);
 
-                        const updatedEdges = edgesAfter.map(edge =>
-                            edge.id === newEdge.id ? updatedEdge : edge
-                        );
-                        useStore.getState().setEdges(updatedEdges);
 
                     } else {
                         console.error('Could not find newly created edge');
@@ -215,6 +211,29 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
         };
     }, [setNodes, setEdges, selectedEdgeType, selectedLineStyle]);
 
+    const handleEdgeClick = useCallback((edgeId: string, edgeType: EdgeType, lineStyle?: LineStyle) => {
+        console.log('Edge click update:', { edgeId, edgeType, lineStyle });
+
+        // update Y.js
+        if (yDoc) {
+            const yEdges = yDoc.getMap('edges');
+            const existingEdge = yEdges.get(edgeId);
+
+            if (existingEdge) {
+                const updatedEdge = {
+                    ...existingEdge,
+                    type: edgeType,
+                    data: {
+                        ...existingEdge.data,
+                        ...(lineStyle && { lineStyle })
+                    }
+                };
+                yEdges.set(edgeId, updatedEdge);
+                console.log('Updated edge in Y.js:', edgeId);
+            }
+        }
+        onEdgeClick(edgeId, edgeType, lineStyle);
+    }, [yDoc, onEdgeClick]);
 
     const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
         const ctrl = event.ctrlKey ? 'Control-' : '';
@@ -403,7 +422,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
                             selectedEdgeType={selectedEdgeType}
                             onEdgeTypeSelect={setSelectedEdgeType}
                             selectedEdgeId={selectedEdgeId}
-                            onUpdateEdge={onEdgeClick}
+                            onUpdateEdge={handleEdgeClick}
                             selectedLineStyle={selectedLineStyle}
                             onLineStyleSelect={setSelectedLineStyle}
                         />

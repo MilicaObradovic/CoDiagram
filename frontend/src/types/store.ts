@@ -1,6 +1,6 @@
 import type {Edge, OnEdgesChange} from "reactflow";
 import type {OnConnect, Node, OnNodesChange} from "@xyflow/react";
-import type {EdgeType} from "./diagram.ts";
+import type {EdgeType, LineStyle} from "./diagram.ts";
 
 export type StoreState = {
     nodes: Node[];
@@ -17,7 +17,7 @@ export type StoreState = {
     redo: () => void;
     canUndo: () => boolean;
     canRedo: () => boolean;
-    onEdgeClick: (edgeId: string, edgeType:EdgeType) => void;
+    onEdgeClick: (edgeId: string, edgeType:EdgeType, lineStyle?: LineStyle) => void;
 };
 
 export interface HistoryState {
