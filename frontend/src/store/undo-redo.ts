@@ -1,10 +1,16 @@
 import type {HistoryState} from '../types/store.ts'
+import * as Y from 'yjs';
 
 export const UndoRedo = {
     debugMode: 0,
     maxHistory: 50,
     history: [] as HistoryState[],
     position: 0,
+    yDoc: null as Y.Doc | null,
+
+    setYDoc(doc: Y.Doc|null): void {
+        this.yDoc = doc;
+    },
 
     reset(item: HistoryState): void {
         this.history = [structuredClone(item)];
@@ -23,7 +29,11 @@ export const UndoRedo = {
         if (this.canUndo()) {
             this.position--;
             this.debug('undo');
-            return this.history[this.position];
+            const state = this.history[this.position]
+            if (this.yDoc && state) {
+                this.applyStateToYjs(state);
+            }
+            return state;
         }
     },
 
@@ -31,9 +41,35 @@ export const UndoRedo = {
         if (this.canRedo()) {
             this.position++;
             this.debug('redo');
-            return this.history[this.position];
+            const state = this.history[this.position];
+
+            // if Y.js, change state with Y.js
+            if (this.yDoc && state) {
+                this.applyStateToYjs(state);
+            }
+
+            return state;
         }
     },
+    applyStateToYjs(state: HistoryState): void {
+        if (!this.yDoc) return;
+
+        this.yDoc.transact(() => {
+            const yNodes = this.yDoc!.getMap('nodes');
+            const yEdges = this.yDoc!.getMap('edges');
+
+            // delete current state
+            yNodes.clear();
+            yEdges.clear();
+
+            // apply new state
+            state.nodes.forEach(node => yNodes.set(node.id, node));
+            state.edges.forEach(edge => yEdges.set(edge.id, edge));
+        }, 'undo-redo');
+
+        console.log('Applied undo/redo state to Y.js');
+    },
+
 
     addHistory(item: HistoryState): void {
         this.history =

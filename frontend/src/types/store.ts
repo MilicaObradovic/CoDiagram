@@ -5,8 +5,8 @@ import type {EdgeType, LineStyle} from "./diagram.ts";
 export type StoreState = {
     nodes: Node[];
     edges: Edge[];
-    setNodes: (nodes: Node[]) => void;
-    setEdges: (edges: Edge[]) => void;
+    setNodes: (nodes: Node[], origin:string) => void;
+    setEdges: (edges: Edge[], origin:string) => void;
     nextNodeId: number,
     onNodesChange: OnNodesChange;
     onEdgesChange: OnEdgesChange;

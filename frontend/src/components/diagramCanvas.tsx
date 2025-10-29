@@ -28,6 +28,8 @@ import {useStore} from '../store';
 import EdgeToolbar from "./EdgeToolbar.tsx";
 import {WebsocketProvider} from "y-websocket";
 import * as Y from 'yjs';
+import {UndoRedo} from "../store/undo-redo.ts";
+import {CursorOverlay} from "./cursorOverlay.tsx";
 
 
 interface DiagramCanvasProps {
@@ -66,6 +68,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
     // Yjs initialization
     useEffect(() => {
         const doc = new Y.Doc();
+        UndoRedo.setYDoc(doc);
 
         const wsProvider = new WebsocketProvider(
             'ws://localhost:1234/diagram-room-1',
@@ -75,6 +78,8 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
 
         const yNodes = doc.getMap('nodes');
         const yEdges = doc.getMap('edges');
+        const yCursors = doc.getMap('cursors'); // 👈 Nova mapa za cursore
+
 
         console.log('Y.js initialized with simple server');
         const originalOnNodesChange = useStore.getState().onNodesChange;
@@ -84,32 +89,32 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
         // Y.js -> React Flow
         yNodes.observe(() => {
             const yjsNodes = Array.from(yNodes.values());
-            console.log('Y.js -> React Flow:', yjsNodes.length, 'nodes');
-            setNodes(yjsNodes);
+            // console.log('Y.js -> React Flow:', yjsNodes.length, 'nodes');
+            setNodes(yjsNodes, "yjs");
         });
 
         yEdges.observe(() => {
             const yjsEdges = Array.from(yEdges.values());
-            console.log('Y.js -> React Flow:', yjsEdges.length, 'edges');
-            setEdges(yjsEdges);
+            // console.log('Y.js -> React Flow:', yjsEdges.length, 'edges');
+            setEdges(yjsEdges, "yjs");
         });
         useStore.setState({
             onNodesChange: (changes) => {
-                console.log('React Flow nodes changes:', changes);
+                // console.log('React Flow nodes changes:', changes);
 
                 changes.forEach(change => {
-                    console.log(`Processing change: ${change.type}`, change);
+                    // console.log(`Processing change: ${change.type}`, change);
 
                     if (change.type === 'add') {
                         yNodes.set(change.item.id, change.item);
-                        console.log('Added node to Y.js:', change.item.id);
+                        // console.log('Added node to Y.js:', change.item.id);
 
                     } else if (change.type === 'remove') {
                         yNodes.delete(change.id);
-                        console.log('Removed node from Y.js:', change.id);
+                        // console.log('Removed node from Y.js:', change.id);
 
                     } else if (change.type === 'position') {
-                        console.log('Node position change:', change.id, change.position);
+                        // console.log('Node position change:', change.id, change.position);
 
                         const existingNode = yNodes.get(change.id);
                         if (existingNode) {
@@ -118,11 +123,11 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
                                 position: change.position
                             };
                             yNodes.set(change.id, updatedNode);
-                            console.log('Updated node position in Y.js');
+                            // console.log('Updated node position in Y.js');
                         }
 
                     } else if (change.type === 'dimensions') {
-                        console.log('Node dimensions change:', change.id, change.dimensions);
+                        // console.log('Node dimensions change:', change.id, change.dimensions);
 
                         const existingNode = yNodes.get(change.id);
                         if (existingNode && change.dimensions) {
@@ -132,11 +137,11 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
                                 height: change.dimensions.height
                             };
                             yNodes.set(change.id, updatedNode);
-                            console.log('Updated node dimensions in Y.js');
+                            // console.log('Updated node dimensions in Y.js');
                         }
 
                     } else if (change.type === 'select') {
-                        console.log('Node select change (ignoring):', change.id, change.selected);
+                        // console.log('Node select change (ignoring):', change.id, change.selected);
                     }
                 });
 
@@ -144,7 +149,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
             },
 
             onEdgesChange: (changes) => {
-                console.log('React Flow edges changes:', changes);
+                // console.log('React Flow edges changes:', changes);
 
                 changes.forEach(change => {
                     if (change.type === 'add') {
@@ -166,7 +171,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
                 // wait for state update, then find new edge
                 setTimeout(() => {
                     const edgesAfter = useStore.getState().edges;
-                    console.log('Edges after connection:', edgesAfter.length);
+                    // console.log('Edges after connection:', edgesAfter.length);
 
                     // find edge that is added (diff btw before/after)
                     const newEdge = edgesAfter.find(edgeAfter =>
@@ -174,7 +179,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
                     );
 
                     if (newEdge) {
-                        console.log('Found NEW edge:', newEdge);
+                        // console.log('Found NEW edge:', newEdge);
                         const updatedEdge = {
                             ...newEdge,
                             type: selectedEdgeType,
@@ -185,13 +190,13 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
                         };
 
                         yEdges.set(updatedEdge.id, updatedEdge);
-                        console.log('Updated edge in Y.js:', updatedEdge.id);
+                        // console.log('Updated edge in Y.js:', updatedEdge.id);
 
 
                     } else {
                         console.error('Could not find newly created edge');
-                        console.log('Before:', edgesBefore.map(e => e.id));
-                        console.log('After:', edgesAfter.map(e => e.id));
+                        // console.log('Before:', edgesBefore.map(e => e.id));
+                        // console.log('After:', edgesAfter.map(e => e.id));
                     }
                 }, 10);
             }
@@ -199,20 +204,60 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
 
         setYDoc(doc);
         setProvider(wsProvider);
+        const handleMouseMove = (event: MouseEvent) => {
+            if (!yDoc) return;
+
+            const bounds = document.getElementById('diagram-container')?.getBoundingClientRect();
+            if (!bounds) return;
+
+            const cursorPosition = {
+                x: event.clientX - bounds.left,
+                y: event.clientY - bounds.top,
+                userId: wsProvider.awareness.clientID, // Jedinstveni ID klijenta
+                timestamp: Date.now()
+            };
+
+            yCursors.set(wsProvider.awareness.clientID.toString(), cursorPosition);
+        };
+
+        // Dodajte event listener
+        const diagramContainer = document.getElementById('diagram-container');
+        if (diagramContainer) {
+            diagramContainer.addEventListener('mousemove', handleMouseMove);
+        }
+
+        // 👈 Obršite cursore kada korisnik napusti
+        wsProvider.awareness.on('change', () => {
+            // Uklonite cursore korisnika koji su se diskonektovali
+            const currentClients = Array.from(wsProvider.awareness.getStates().keys());
+            const cursorKeys = Array.from(yCursors.keys());
+
+            cursorKeys.forEach(key => {
+                if (!currentClients.includes(Number(key))) {
+                    yCursors.delete(key);
+                }
+            });
+        });
 
         return () => {
+            UndoRedo.setYDoc(null);
             useStore.setState({
                 onNodesChange: originalOnNodesChange,
                 onEdgesChange: originalOnEdgesChange,
                 onConnect: originalOnConnect
             });
+            yCursors.delete(wsProvider.awareness.clientID.toString());
+
+            if (diagramContainer) {
+                diagramContainer.removeEventListener('mousemove', handleMouseMove);
+            }
             wsProvider.destroy();
             doc.destroy();
         };
     }, [setNodes, setEdges, selectedEdgeType, selectedLineStyle]);
 
     const handleEdgeClick = useCallback((edgeId: string, edgeType: EdgeType, lineStyle?: LineStyle) => {
-        console.log('Edge click update:', { edgeId, edgeType, lineStyle });
+        // console.log('Edge click update:', { edgeId, edgeType, lineStyle });
 
         // update Y.js
         if (yDoc) {
@@ -277,16 +322,16 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
         const yNodes = yDoc.getMap('nodes');
         yNodes.set(newNode.id, newNode);
 
-        console.log('✅ Added new shape via Y.js:', newNode.id);
-        console.log('📊 Y.js nodes after creation:', Array.from(yNodes.keys()));
+        // console.log('Added new shape via Y.js:', newNode.id);
+        // console.log('Y.js nodes after creation:', Array.from(yNodes.keys()));
 
         onShapeCreated();
     }, [reactFlowInstance, yDoc, onShapeCreated]);
 
     useEffect(() => {
-        console.log('selectedShape changed:', selectedShape);
+        // console.log('selectedShape changed:', selectedShape);
         if (selectedShape && reactFlowInstance) {
-            console.log('Creating shape:', selectedShape);
+            // console.log('Creating shape:', selectedShape);
             createNewShape(selectedShape);
             onShapeCreated();
         }
@@ -368,7 +413,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
 
     return (
         <div style={{width: '100%', height: '100%'}} className="flex">
-            <div className="flex-1">
+            <div className="flex-1" id="diagram-container">
                 <ReactFlow
                     tabIndex={0}
                     nodes={nodes}
@@ -440,6 +485,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
                         }}
                     />
                     <Background gap={20} size={1}/>
+                    <CursorOverlay  yDoc={yDoc} provider={provider}/>
                 </ReactFlow>
             </div>
         </div>

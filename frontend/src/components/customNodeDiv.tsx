@@ -58,7 +58,8 @@ const CustomNodeDiv = ({
                     isVisible={selected}
                     minWidth={50}
                     minHeight={30}
-                    handleStyle={{border: '2px solid #3b82f6', background: 'white'}}
+                    handleStyle={{border: '2px solid #3b82f6', background: 'white', zIndex: 20}}
+                    style={{zIndex: 20}}
                 />
 
                 {/* Shape stays in background */}

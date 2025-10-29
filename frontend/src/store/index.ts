@@ -13,13 +13,21 @@ const useStore = create<StoreState>((set, get) => ({
     edges: [],
     nextNodeId: 1,
 
-    setNodes: (nodes: Node[]) => {
+    setNodes: (nodes: Node[], origin: 'user' | 'yjs' | 'undo-redo' = 'user') => {
         set({nodes});
-        UndoRedo.addHistory({nodes: get().nodes, edges: get().edges});
+
+        // save history only for user activity
+        if (origin === 'user') {
+            UndoRedo.addHistory({nodes: get().nodes, edges: get().edges});
+        }
     },
-    setEdges: (edges: Edge[]) => {
+
+    setEdges: (edges: Edge[], origin: 'user' | 'yjs' | 'undo-redo' = 'user') => {
         set({edges});
-        UndoRedo.addHistory({nodes: get().nodes, edges: get().edges});
+
+        if (origin === 'user') {
+            UndoRedo.addHistory({nodes: get().nodes, edges: get().edges});
+        }
     },
     onNodesChange: (changes: NodeChange[]) => {
         set({
@@ -106,15 +114,17 @@ const useStore = create<StoreState>((set, get) => ({
 
     undo: () => {
         const state = UndoRedo.undo();
-        if (state) {
-            set({nodes: state.nodes, edges: state.edges});
+        if (state && !UndoRedo.yDoc) {
+            get().setNodes(state.nodes, 'undo-redo');
+            get().setEdges(state.edges, 'undo-redo');
         }
     },
 
     redo: () => {
         const state = UndoRedo.redo();
-        if (state) {
-            set({nodes: state.nodes, edges: state.edges});
+        if (state && !UndoRedo.yDoc) {
+            get().setNodes(state.nodes, 'undo-redo');
+            get().setEdges(state.edges, 'undo-redo');
         }
     },
     canUndo: () => UndoRedo.canUndo(),
