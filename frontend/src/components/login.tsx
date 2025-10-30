@@ -1,6 +1,6 @@
 import React, {useState} from 'react';
 import type {LoginFormData, LoginFormErrors} from '../types/auth';
-import {useNavigate} from 'react-router-dom';
+import {Link, useNavigate} from 'react-router-dom';
 
 const Login: React.FC = () => {
     const [formData, setFormData] = useState<LoginFormData>({
@@ -87,9 +87,9 @@ const Login: React.FC = () => {
                     <h2 className="mt-6 text-3xl font-bold text-gray-900">Sign in to your account</h2>
                     <p className="mt-2 text-sm text-gray-600">
                         Or{' '}
-                        <a href="#" className="font-medium text-blue-600 hover:text-blue-500 transition-colors">
+                        <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500 transition-colors">
                             create a new account
-                        </a>
+                        </Link>
                     </p>
                 </div>
 
@@ -140,29 +140,6 @@ const Login: React.FC = () => {
                             {errors.password && (
                                 <p className="mt-1 text-sm text-red-600">{errors.password}</p>
                             )}
-                        </div>
-                    </div>
-
-                    {/* Remember Me & Forgot Password */}
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                            <input
-                                id="rememberMe"
-                                name="rememberMe"
-                                type="checkbox"
-                                checked={formData.rememberMe}
-                                onChange={handleChange}
-                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                            />
-                            <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-900">
-                                Remember me
-                            </label>
-                        </div>
-
-                        <div className="text-sm">
-                            <a href="#" className="font-medium text-blue-600 hover:text-blue-500 transition-colors">
-                                Forgot your password?
-                            </a>
                         </div>
                     </div>
 
