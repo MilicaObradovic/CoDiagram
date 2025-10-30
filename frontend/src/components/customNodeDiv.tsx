@@ -27,7 +27,7 @@ const CustomNodeDiv = ({
     const shapeType = data.shapeType || 'rectangle';
     const width = currentNode?.width || 100;
     const height = currentNode?.height || 60;
-    console.log(width, height);
+    // console.log(width, height);
 
     const handleSave = useCallback(() => {
         useStore.getState().updateNodeLabel(id, editText);
@@ -59,7 +59,6 @@ const CustomNodeDiv = ({
                     minWidth={50}
                     minHeight={30}
                     handleStyle={{border: '2px solid #3b82f6', background: 'white', zIndex: 20}}
-                    style={{zIndex: 20}}
                 />
 
                 {/* Shape stays in background */}

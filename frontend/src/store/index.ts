@@ -4,14 +4,33 @@ import {UndoRedo} from './undo-redo';
 import {addEdge, applyNodeChanges, type NodeChange, type Connection, type Node} from "@xyflow/react";
 import {applyEdgeChanges, type Edge, type EdgeChange} from "reactflow";
 import type {EdgeType, LineStyle} from "../types/diagram.ts";
+import * as Y from 'yjs';
 
 UndoRedo.addHistory({nodes: [], edges: []});
-
 // useStore hook that can be used in components to get parts of the store and call actions
 const useStore = create<StoreState>((set, get) => ({
     nodes: [],
     edges: [],
     nextNodeId: 1,
+    isInitialized: false,
+
+    initializeYjs: (doc: Y.Doc) => {
+        const yNodes = doc.getMap('nodes'); // Change from getArray to getMap
+        const yEdges = doc.getMap('edges'); // Change from getArray to getMap
+
+        const initialNodes = Array.from(yNodes.values()); // Convert map values to array
+        const initialEdges = Array.from(yEdges.values()); // Convert map values to array
+
+        set({
+            nodes: initialNodes,
+            edges: initialEdges,
+            isInitialized: true
+        });
+
+        // Store references
+        (get() as any).yNodes = yNodes;
+        (get() as any).yEdges = yEdges;
+    },
 
     setNodes: (nodes: Node[], origin: 'user' | 'yjs' | 'undo-redo' = 'user') => {
         set({nodes});
@@ -86,18 +105,35 @@ const useStore = create<StoreState>((set, get) => ({
         set({edges: newEdges});
         UndoRedo.addHistory({nodes: get().nodes, edges: newEdges});
     },
-
     updateNodeLabel: (nodeId: string, label: string) => {
-        set({
-            nodes: get().nodes.map((node) => {
-                if (node.id === nodeId) {
-                    node.data = {...node.data, label};
-                }
+        const state = get();
+        const { nodes, edges, isInitialized } = state;
 
-                return node;
-            }),
+        const updatedNodes = nodes.map((node) => {
+            if (node.id === nodeId) {
+                return {
+                    ...node,
+                    data: {
+                        ...node.data,
+                        label: label
+                    }
+                };
+            }
+            return node;
         });
-        UndoRedo.addHistory({nodes: get().nodes, edges: get().edges});
+
+        set({ nodes: updatedNodes });
+
+        // Sync to Yjs if initialized
+        if (isInitialized && (get() as any).yNodes) {
+            const yNodes = (get() as any).yNodes;
+            const updatedNode = updatedNodes.find(n => n.id === nodeId);
+            if (updatedNode) {
+                yNodes.set(nodeId, updatedNode); // Update the node in Yjs map
+            }
+        }
+
+        UndoRedo.addHistory({ nodes: updatedNodes, edges });
     },
 
     updateEdgeLabel: (edgeId: string, label: string) => {

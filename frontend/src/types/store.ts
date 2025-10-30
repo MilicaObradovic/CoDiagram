@@ -1,10 +1,13 @@
 import type {Edge, OnEdgesChange} from "reactflow";
 import type {OnConnect, Node, OnNodesChange} from "@xyflow/react";
 import type {EdgeType, LineStyle} from "./diagram.ts";
+import * as Y from "yjs";
 
 export type StoreState = {
     nodes: Node[];
     edges: Edge[];
+    isInitialized: boolean;
+    initializeYjs: (doc: Y.Doc)=>void;
     setNodes: (nodes: Node[], origin:string) => void;
     setEdges: (edges: Edge[], origin:string) => void;
     nextNodeId: number,

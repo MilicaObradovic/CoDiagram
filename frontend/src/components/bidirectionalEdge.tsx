@@ -3,16 +3,20 @@ import {
     BaseEdge,
     type EdgeProps, getStraightPath, getSimpleBezierPath,
 } from '@xyflow/react';
+import React from "react";
 
-export default function CustomEdge({
-                                       sourceX,
-                                       sourceY,
-                                       targetX,
-                                       targetY,
-                                       sourcePosition,
-                                       targetPosition,
-                                       markerEnd, selected, type, data
-                                   }: EdgeProps) {
+const CustomEdge = ({
+                        sourceX,
+                        sourceY,
+                        targetX,
+                        targetY,
+                        sourcePosition,
+                        targetPosition,
+                        markerEnd,
+                        selected,
+                        type,
+                        data
+                    }: EdgeProps) => {
     const edgePathParams = {
         sourceX,
         sourceY,
@@ -39,13 +43,23 @@ export default function CustomEdge({
             [path] = getSmoothStepPath({...edgePathParams, borderRadius: 0});
             break;
     }
+
     const lineStyle = data?.lineStyle || 'solid';
     const strokeDasharray =
         lineStyle === 'dashed' ? '5,5' :
             lineStyle === 'dotted' ? '2,2' : 'none';
-    return <BaseEdge path={path} markerEnd={markerEnd} style={{
-        stroke: '#000000',
-        strokeWidth: selected ? 0.7 : 0.5,
-        strokeDasharray,
-    }}/>;
-}
+
+    return (
+        <BaseEdge
+            path={path}
+            markerEnd={markerEnd}
+            style={{
+                stroke: selected ? '#3b82f6' : '#000000',
+                strokeWidth: selected ? 0.9 : 0.6,
+                strokeDasharray,
+            }}
+        />
+    );
+};
+
+export default React.memo(CustomEdge);

@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
     Background,
     ConnectionLineType,
@@ -25,7 +25,7 @@ import DownloadButton from "./downloadButton.tsx";
 import '@xyflow/react/dist/style.css';
 import CustomEdge from './bidirectionalEdge.tsx';
 import {useStore} from '../store';
-import EdgeToolbar from "./EdgeToolbar.tsx";
+import EdgeToolbar from "./edgeToolbar.tsx";
 import {WebsocketProvider} from "y-websocket";
 import * as Y from 'yjs';
 import {UndoRedo} from "../store/undo-redo.ts";
@@ -60,7 +60,6 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
     const [selectedEdgeType, setSelectedEdgeType] = useState<EdgeType>(EdgeTypes.STEP);
     const [selectedEdgeId, setSelectedEdgeId] = useState<string | undefined>(undefined);
     const [selectedLineStyle, setSelectedLineStyle] = useState<LineStyle>(LineStyles.SOLID);
-
     // Yjs state
     const [yDoc, setYDoc] = useState<Y.Doc | null>(null);
     const [provider, setProvider] = useState<WebsocketProvider | null>(null);
@@ -72,92 +71,122 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
 
         const wsProvider = new WebsocketProvider(
             'ws://localhost:1234/diagram-room-1',
-            '', // Prazan room name
+            '',
             doc
         );
-
-        const yNodes = doc.getMap('nodes');
-        const yEdges = doc.getMap('edges');
-        const yCursors = doc.getMap('cursors'); // 👈 Nova mapa za cursore
-
-
+        useStore.getState().initializeYjs(doc);
         console.log('Y.js initialized with simple server');
-        const originalOnNodesChange = useStore.getState().onNodesChange;
-        const originalOnEdgesChange = useStore.getState().onEdgesChange;
-        const originalOnConnect = useStore.getState().onConnect;
+        setYDoc(doc);
+        setProvider(wsProvider);
 
-        // Y.js -> React Flow
+        return () => {
+            UndoRedo.setYDoc(null);
+            wsProvider.destroy();
+            doc.destroy();
+        };
+    }, []);
+
+    // Yjs -> React Flow synchronization
+    useEffect(() => {
+        if (!yDoc) return;
+
+        const yNodes = yDoc.getMap('nodes');
+        const yEdges = yDoc.getMap('edges');
+
+        // Set up observers for Yjs -> React Flow sync
         yNodes.observe(() => {
             const yjsNodes = Array.from(yNodes.values());
-            // console.log('Y.js -> React Flow:', yjsNodes.length, 'nodes');
             setNodes(yjsNodes, "yjs");
         });
 
         yEdges.observe(() => {
             const yjsEdges = Array.from(yEdges.values());
-            // console.log('Y.js -> React Flow:', yjsEdges.length, 'edges');
             setEdges(yjsEdges, "yjs");
         });
+
+        return () => {
+            // Cleanup observers if needed
+        };
+    }, [yDoc, setNodes, setEdges]);
+
+    useEffect(() => {
+        if (!yDoc) return;
+
+        const yNodes = yDoc.getMap('nodes');
+        const yEdges = yDoc.getMap('edges');
+        const originalOnNodesChange = useStore.getState().onNodesChange;
+        const originalOnEdgesChange = useStore.getState().onEdgesChange;
+        const originalOnConnect = useStore.getState().onConnect;
+
         useStore.setState({
             onNodesChange: (changes) => {
-                // console.log('React Flow nodes changes:', changes);
-
                 changes.forEach(change => {
-                    // console.log(`Processing change: ${change.type}`, change);
-
                     if (change.type === 'add') {
                         yNodes.set(change.item.id, change.item);
-                        // console.log('Added node to Y.js:', change.item.id);
-
                     } else if (change.type === 'remove') {
                         yNodes.delete(change.id);
-                        // console.log('Removed node from Y.js:', change.id);
-
                     } else if (change.type === 'position') {
-                        // console.log('Node position change:', change.id, change.position);
-
+                        // Skip position changes during resize
+                        if (change.dragging !== false) { // Only sync when not dragging
+                            const existingNode = yNodes.get(change.id);
+                            if (existingNode) {
+                                const updatedNode = {
+                                    ...existingNode,
+                                    position: change.position
+                                };
+                                yNodes.set(change.id, updatedNode);
+                            }
+                        }
+                    } else if (change.type === 'dimensions') {
+                        // Only sync when resize ends or use debounce for final value
+                        if (change.resizing === false) {
+                            // Sync final resize value
+                            const existingNode = yNodes.get(change.id);
+                            if (existingNode && change.dimensions) {
+                                const updatedNode = {
+                                    ...existingNode,
+                                    width: Math.max(20, change.dimensions.width),
+                                    height: Math.max(20, change.dimensions.height),
+                                    position: change.position ? change.position : existingNode.position
+                                };
+                                yNodes.set(change.id, updatedNode);
+                            }
+                        }
+                    } else if (change.type === 'select') {
                         const existingNode = yNodes.get(change.id);
                         if (existingNode) {
                             const updatedNode = {
                                 ...existingNode,
-                                position: change.position
+                                selected: change.selected
                             };
                             yNodes.set(change.id, updatedNode);
-                            // console.log('Updated node position in Y.js');
                         }
-
-                    } else if (change.type === 'dimensions') {
-                        // console.log('Node dimensions change:', change.id, change.dimensions);
-
-                        const existingNode = yNodes.get(change.id);
-                        if (existingNode && change.dimensions) {
-                            const updatedNode = {
-                                ...existingNode,
-                                width: change.dimensions.width,
-                                height: change.dimensions.height
-                            };
-                            yNodes.set(change.id, updatedNode);
-                            // console.log('Updated node dimensions in Y.js');
-                        }
-
-                    } else if (change.type === 'select') {
-                        // console.log('Node select change (ignoring):', change.id, change.selected);
                     }
                 });
 
                 originalOnNodesChange(changes);
             },
-
             onEdgesChange: (changes) => {
-                // console.log('React Flow edges changes:', changes);
-
                 changes.forEach(change => {
+                    console.log('🔵 Processing edge change:', change.type, change.id);
+
                     if (change.type === 'add') {
                         yEdges.set(change.item.id, change.item);
                         console.log('Added edge to Y.js:', change.item.id);
                     } else if (change.type === 'remove') {
                         yEdges.delete(change.id);
                         console.log('Removed edge from Y.js:', change.id);
+                    } else if (change.type === 'select') {
+                        console.log('🔵 Edge selection change:', change.id, change.selected);
+                        const existingEdge = yEdges.get(change.id);
+                        if (existingEdge) {
+                            const updatedEdge = {
+                                ...existingEdge,
+                                selected: change.selected
+                            };
+                            yEdges.set(change.id, updatedEdge);
+                            console.log('Updated edge selection in Y.js');
+                        }
                     }
                 });
 
@@ -201,35 +230,37 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
                 }, 10);
             }
         });
+        return () => {
+            useStore.setState({
+                onNodesChange: originalOnNodesChange,
+                onEdgesChange: originalOnEdgesChange,
+                onConnect: originalOnConnect
+            });
+        };
+    }, [yDoc, selectedEdgeType, selectedLineStyle]);
+    // Cursor management
+    useEffect(() => {
+        if (!provider || !yDoc) return;
 
-        setYDoc(doc);
-        setProvider(wsProvider);
+        const yCursors = yDoc.getMap('cursors');
+        const diagramContainer = document.getElementById('diagram-container');
+
         const handleMouseMove = (event: MouseEvent) => {
-            if (!yDoc) return;
-
-            const bounds = document.getElementById('diagram-container')?.getBoundingClientRect();
+            const bounds = diagramContainer?.getBoundingClientRect();
             if (!bounds) return;
 
             const cursorPosition = {
                 x: event.clientX - bounds.left,
                 y: event.clientY - bounds.top,
-                userId: wsProvider.awareness.clientID, // Jedinstveni ID klijenta
+                userId: provider.awareness.clientID,
                 timestamp: Date.now()
             };
 
-            yCursors.set(wsProvider.awareness.clientID.toString(), cursorPosition);
+            yCursors.set(provider.awareness.clientID.toString(), cursorPosition);
         };
 
-        // Dodajte event listener
-        const diagramContainer = document.getElementById('diagram-container');
-        if (diagramContainer) {
-            diagramContainer.addEventListener('mousemove', handleMouseMove);
-        }
-
-        // 👈 Obršite cursore kada korisnik napusti
-        wsProvider.awareness.on('change', () => {
-            // Uklonite cursore korisnika koji su se diskonektovali
-            const currentClients = Array.from(wsProvider.awareness.getStates().keys());
+        const handleUserLeave = () => {
+            const currentClients = Array.from(provider.awareness.getStates().keys());
             const cursorKeys = Array.from(yCursors.keys());
 
             cursorKeys.forEach(key => {
@@ -237,28 +268,23 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
                     yCursors.delete(key);
                 }
             });
-        });
+        };
+
+        if (diagramContainer) {
+            diagramContainer.addEventListener('mousemove', handleMouseMove);
+            provider.awareness.on('change', handleUserLeave);
+        }
 
         return () => {
-            UndoRedo.setYDoc(null);
-            useStore.setState({
-                onNodesChange: originalOnNodesChange,
-                onEdgesChange: originalOnEdgesChange,
-                onConnect: originalOnConnect
-            });
-            yCursors.delete(wsProvider.awareness.clientID.toString());
-
             if (diagramContainer) {
                 diagramContainer.removeEventListener('mousemove', handleMouseMove);
             }
-            wsProvider.destroy();
-            doc.destroy();
+            provider.awareness.off('change', handleUserLeave);
+            yCursors.delete(provider.awareness.clientID.toString());
         };
-    }, [setNodes, setEdges, selectedEdgeType, selectedLineStyle]);
+    }, [provider, yDoc]);
 
     const handleEdgeClick = useCallback((edgeId: string, edgeType: EdgeType, lineStyle?: LineStyle) => {
-        // console.log('Edge click update:', { edgeId, edgeType, lineStyle });
-
         // update Y.js
         if (yDoc) {
             const yEdges = yDoc.getMap('edges');
@@ -270,7 +296,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
                     type: edgeType,
                     data: {
                         ...existingEdge.data,
-                        ...(lineStyle && { lineStyle })
+                        ...(lineStyle && {lineStyle})
                     }
                 };
                 yEdges.set(edgeId, updatedEdge);
@@ -359,13 +385,13 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
     const nodeTypes = useMemo(() => ({
         default: CustomNodeWithProps,
     }), [CustomNodeWithProps]);
-    const edgeTypes = {
+    const edgeTypes = useMemo(() => ({
         [EdgeTypes.STEP]: CustomEdge,
         [EdgeTypes.SMOOTHSTEP]: CustomEdge,
         [EdgeTypes.STRAIGHT]: CustomEdge,
         [EdgeTypes.BEZIER]: CustomEdge,
         default: CustomEdge,
-    };
+    }), []);
     const getConnectionLineType = useCallback((edgeType: EdgeType) => {
         switch (edgeType) {
             case EdgeTypes.STEP:
@@ -485,7 +511,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
                         }}
                     />
                     <Background gap={20} size={1}/>
-                    <CursorOverlay  yDoc={yDoc} provider={provider}/>
+                    <CursorOverlay yDoc={yDoc} provider={provider}/>
                 </ReactFlow>
             </div>
         </div>

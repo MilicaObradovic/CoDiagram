@@ -1,7 +1,7 @@
 import * as Y from 'yjs';
 import {useEffect, useState} from "react";
 import {WebsocketProvider} from "y-websocket";
-import {useReactFlow} from "@xyflow/react";
+import {useReactFlow, type Viewport} from "@xyflow/react";
 
 interface CursorPosition {
     x: number;
@@ -14,6 +14,15 @@ interface CursorOverlayProps {
     yDoc: Y.Doc | null;
     provider: WebsocketProvider|null;
 }
+interface CursorPosition {
+    x: number;
+    y: number;
+    userId: number;
+    userName: string;
+    color: string;
+    timestamp: number;
+    viewport: Viewport;
+}
 
 export const CursorOverlay = ({ yDoc, provider }: CursorOverlayProps) => {
     const [cursors, setCursors] = useState<Map<string, CursorPosition>>(new Map());
@@ -22,7 +31,7 @@ export const CursorOverlay = ({ yDoc, provider }: CursorOverlayProps) => {
     useEffect(() => {
         if (!yDoc || !provider) return;
 
-        const yCursors = yDoc.getMap<any>('cursors');
+        const yCursors = yDoc.getMap<CursorPosition>('cursors');
         const currentClientId = provider.awareness.clientID.toString();
 
         const updateCursors = () => {
@@ -97,7 +106,7 @@ export const CursorOverlay = ({ yDoc, provider }: CursorOverlayProps) => {
             width: '100%',
             height: '100%',
             pointerEvents: 'none',
-            zIndex: 10
+            zIndex: 1
         }}>
             {Array.from(cursors.entries()).map(([userId, cursor]) => {
                 // convert flow position to screen render
