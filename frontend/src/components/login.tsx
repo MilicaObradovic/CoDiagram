@@ -1,19 +1,33 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import type {LoginFormData, LoginFormErrors} from '../types/auth';
-import {Link, useNavigate} from 'react-router-dom';
+import {Link, useLocation, useNavigate} from 'react-router-dom';
+import {authApi} from "../services/authApi.ts";
 
 const Login: React.FC = () => {
     const [formData, setFormData] = useState<LoginFormData>({
         email: '',
         password: '',
-        rememberMe: false,
     });
     const navigate = useNavigate();
-
-
+    const location = useLocation();
     const [errors, setErrors] = useState<LoginFormErrors>({});
     const [isLoading, setIsLoading] = useState(false);
+    const [apiError, setApiError] = useState<string>('');
+    const [successMessage, setSuccessMessage] = useState<string>(''); // Add success state
 
+    // Check for registration success message in location state
+    useEffect(() => {
+        if (location.state?.message) {
+            setSuccessMessage(location.state.message);
+
+            // Clear the message after 5 seconds
+            const timer = setTimeout(() => {
+                setSuccessMessage('');
+            }, 5000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [location.state]);
     const validateForm = (): boolean => {
         const newErrors: LoginFormErrors = {};
 
@@ -43,15 +57,18 @@ const Login: React.FC = () => {
         }
 
         setIsLoading(true);
-
-        // Simulate API call
         try {
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            console.log('Login data:', formData);
+            const response = await authApi.login(formData.email, formData.password);
+
+            // Store token in localStorage
+            localStorage.setItem('token', response.token);
+            localStorage.setItem('user', JSON.stringify(response.user));
+
+            console.log('Login successful:', response.user);
             navigate('/');
         } catch (error) {
             console.error('Login failed:', error);
-            alert('Login failed. Please try again.');
+            setApiError(error instanceof Error ? error.message : 'Login failed. Please try again.');
         } finally {
             setIsLoading(false);
         }
@@ -70,6 +87,10 @@ const Login: React.FC = () => {
                 ...prev,
                 [name]: undefined,
             }));
+        }
+        // Clear API error when user starts typing
+        if (apiError) {
+            setApiError('');
         }
     };
 
@@ -92,6 +113,30 @@ const Login: React.FC = () => {
                         </Link>
                     </p>
                 </div>
+
+                {/* Registration Success Message */}
+                {successMessage && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div className="flex items-center">
+                            <svg className="h-5 w-5 text-green-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <p className="text-green-700 text-sm">{successMessage}</p>
+                        </div>
+                    </div>
+                )}
+
+                {/* API Error Message */}
+                {apiError && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div className="flex items-center">
+                            <svg className="h-5 w-5 text-red-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <p className="text-red-700 text-sm">{apiError}</p>
+                        </div>
+                    </div>
+                )}
 
                 {/* Login Form */}
                 <form className="mt-8 space-y-6" onSubmit={handleSubmit}>

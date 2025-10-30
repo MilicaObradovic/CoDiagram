@@ -1,7 +1,6 @@
 export interface LoginFormData {
     email: string;
     password: string;
-    rememberMe: boolean;
 }
 
 export interface LoginFormErrors {
@@ -15,7 +14,6 @@ export interface RegisterFormData {
     email: string;
     password: string;
     confirmPassword: string;
-    agreeToTerms: boolean;
 }
 
 export interface RegisterFormErrors {
@@ -24,5 +22,17 @@ export interface RegisterFormErrors {
     email?: string;
     password?: string;
     confirmPassword?: string;
-    agreeToTerms?: string;
+}
+export interface AuthResponse {
+    token: string;
+    user: {
+        id: string;
+        name: string;
+        email: string;
+    };
+}
+
+export interface ErrorResponse {
+    message: string;
+    error?: string;
 }

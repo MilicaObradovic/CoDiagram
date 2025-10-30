@@ -22,18 +22,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Password is required'],
     minlength: [6, 'Password must be at least 6 characters'],
-    select: false // Ne vraća password u query-ima
-  },
-  
-  avatar: {
-    type: String,
-    default: null
-  },
-  
-  role: {
-    type: String,
-    enum: ['user', 'admin'],
-    default: 'user'
+    select: false // wont return pass in queries
   },
   
   isVerified: {
@@ -46,7 +35,7 @@ const userSchema = new mongoose.Schema({
     default: Date.now
   },
   
-  // Za kolaboraciju - trenutno aktivni dijagrami
+  // for collaboration
   currentSession: {
     diagramId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -58,32 +47,14 @@ const userSchema = new mongoose.Schema({
       default: null
     }
   },
-  
-  // Preferences korisnika
-  preferences: {
-    theme: {
-      type: String,
-      enum: ['light', 'dark', 'auto'],
-      default: 'light'
-    },
-    defaultDiagramType: {
-      type: String,
-      enum: ['flowchart', 'uml', 'mindmap', 'custom'],
-      default: 'flowchart'
-    },
-    autoSave: {
-      type: Boolean,
-      default: true
-    }
-  }
 
 }, {
-  timestamps: true, // Automatski dodaje createdAt i updatedAt
+  timestamps: true, // auto createdAt and updatedAt
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
 });
 
-// Virtual polje za broj dijagrama koje je kreirao korisnik
+// num of diagrams user created
 userSchema.virtual('diagramsCount', {
   ref: 'Diagram',
   localField: '_id',
@@ -91,7 +62,6 @@ userSchema.virtual('diagramsCount', {
   count: true
 });
 
-// Virtual polje za kolaboracije
 userSchema.virtual('collaborationsCount', {
   ref: 'Diagram',
   localField: '_id',
@@ -100,9 +70,9 @@ userSchema.virtual('collaborationsCount', {
 });
 
 
-// Middleware za hash password pre čuvanja
+// Middleware for hash password before save
 userSchema.pre('save', async function(next) {
-  // Hash password samo ako je modifikovan
+  // Hash password only if changed
   if (!this.isModified('password')) return next();
   
   try {
@@ -114,7 +84,7 @@ userSchema.pre('save', async function(next) {
   }
 });
 
-// Middleware za update lastActive
+// Middleware for update lastActive
 userSchema.pre('save', function(next) {
   if (this.isModified('lastActive')) {
     this.lastActive = new Date();
@@ -122,12 +92,10 @@ userSchema.pre('save', function(next) {
   next();
 });
 
-// Metoda za proveru password
 userSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Metoda za update aktivne sesije
 userSchema.methods.updateSession = function(diagramId = null) {
   this.currentSession = {
     diagramId: diagramId,
@@ -136,20 +104,15 @@ userSchema.methods.updateSession = function(diagramId = null) {
   return this.save();
 };
 
-// Metoda za dobijanje osnovnih podataka (bez osetljivih)
 userSchema.methods.getPublicProfile = function() {
   return {
     id: this._id,
     name: this.name,
     email: this.email,
-    avatar: this.avatar,
-    role: this.role,
     lastActive: this.lastActive,
-    preferences: this.preferences
   };
 };
 
-// Statička metoda za pronalaženje po emailu (sa password-om za login)
 userSchema.statics.findByEmail = function(email) {
   return this.findOne({ email }).select('+password');
 };
