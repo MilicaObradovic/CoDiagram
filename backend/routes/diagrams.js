@@ -22,14 +22,41 @@ router.get('/', auth, async (req, res) => {
 
 router.post('/', auth, async (req, res) => {
   try {
-    const { name, description } = req.body;
+    console.log('🟡 Creating diagram with body:', req.body);
+    const { name, description, nodes = [], edges = [] } = req.body;
+    
+    // Validate nodes and edges structure
+    const validatedNodes = nodes.map(node => ({
+      id: node.id,
+      type: node.type || 'default',
+      position: {
+        x: node.position?.x || 0,
+        y: node.position?.y || 0
+      },
+      data: node.data || {},
+      width: node.width || 200,
+      height: node.height || 100,
+      selected: node.selected || false,
+      dragging: node.dragging || false
+    }));
+
+    const validatedEdges = edges.map(edge => ({
+      id: edge.id,
+      source: edge.source,
+      target: edge.target,
+      sourceHandle: edge.sourceHandle || null,
+      targetHandle: edge.targetHandle || null,
+      type: edge.type || 'default',
+      data: edge.data || {},
+      selected: edge.selected || false
+    }));
     
     const diagram = new Diagram({
       name,
       description,
       createdBy: req.user.id,
-      nodes: [],
-      edges: []
+      nodes: validatedNodes,
+      edges: validatedEdges
     });
     
     await diagram.save();

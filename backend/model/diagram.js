@@ -32,11 +32,7 @@ const diagramSchema = new mongoose.Schema({
   collaborators: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
-  }],
-  isPublic: {
-    type: Boolean,
-    default: false
-  }
+  }]
 }, {
   timestamps: true
 });

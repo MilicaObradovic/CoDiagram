@@ -1,3 +1,5 @@
+import type {Edge} from "reactflow";
+
 export interface Shape {
     id: string;
     type: ShapeType;
@@ -158,4 +160,33 @@ export const LineStyles = {
     SOLID: 'solid' as LineStyle,
     DASHED: 'dashed' as LineStyle,
     DOTTED: 'dotted' as LineStyle,
+}
+
+// Add these types for diagrams
+export interface Position {
+    x: number;
+    y: number;
+}
+
+export interface NodeData {
+    label?: string;
+    [key: string]: any;
+}
+
+export interface CreateDiagramData {
+    name: string;
+    description?: string;
+    nodes?: Node[];
+    edges?: Edge[];
+}
+
+export interface DiagramResponse {
+    _id: string;
+    name: string;
+    description?: string;
+    createdBy: string;
+    nodes: Node[];
+    edges: Edge[];
+    createdAt: string;
+    updatedAt: string;
 }

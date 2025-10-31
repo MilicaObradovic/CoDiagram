@@ -1,11 +1,10 @@
 import React from 'react';
 import type {ShapeType, ToolbarState} from "../types/diagram.ts";
-import {useNavigate} from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
 
 interface ToolbarProps {
     toolbarState: ToolbarState;
     onToolbarStateChange: (state: Partial<ToolbarState>) => void;
-    onShapeSelect: (shapeType: ShapeType) => void;
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({
@@ -49,7 +48,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                 {/* Logo and Title */}
                 <div className="flex w-72 items-center justify-around ">
                     {/* Logo SVG */}
-                    <div className="flex items-center space-x-3">
+                    <Link to="/" className="flex items-center space-x-3">
                         <div className="w-10 h-10 rounded-lg flex items-center justify-center">
                             <img
                                 src="/logo.png"
@@ -59,7 +58,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                         </div>
                         {/* Title */}
                         <h1 className="text-xl font-bold text-white">CoDiagram</h1>
-                    </div>
+                    </Link>
                 </div>
 
                 <div className="w-px h-6 bg-gray-600"></div>
@@ -135,7 +134,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                                 {/* Dropdown Items */}
                                 <button
                                     className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-600 transition-colors flex items-center space-x-2"
-                                    onClick={() => console.log('Navigate to diagrams')}
+                                    onClick={() => navigate(`/diagrams`)}
                                 >
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}

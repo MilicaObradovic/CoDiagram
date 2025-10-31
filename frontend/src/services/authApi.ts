@@ -1,4 +1,5 @@
 import type { AuthResponse, ErrorResponse } from '../types/auth';
+import type {CreateDiagramData, DiagramResponse} from "../types/diagram.ts";
 
 const API_BASE_URL = 'http://localhost:5001/api';
 
@@ -10,7 +11,7 @@ class AuthApi {
     }
 
     private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-        const url = `${this.baseUrl}/auth${endpoint}`;
+        const url = `${this.baseUrl}${endpoint}`;
         const config = {
             headers: {
                 'Content-Type': 'application/json',
@@ -37,14 +38,14 @@ class AuthApi {
     }
 
     async login(email: string, password: string): Promise<AuthResponse> {
-        return this.request<AuthResponse>('/login', {
+        return this.request<AuthResponse>('/auth/login', {
             method: 'POST',
             body: JSON.stringify({ email, password }),
         });
     }
 
     async register(name: string, email: string, password: string, confirmPassword: string): Promise<AuthResponse> {
-        return this.request<AuthResponse>('/register', {
+        return this.request<AuthResponse>('/auth/register', {
             method: 'POST',
             body: JSON.stringify({ name, email, password, confirmPassword }),
         });
@@ -53,6 +54,53 @@ class AuthApi {
     async getCurrentUser(token: string): Promise<{ user: any }> {
         return this.request<{ user: any }>('/me', {
             method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+        });
+    }
+    async createDiagram(diagramData: CreateDiagramData, token: string): Promise<DiagramResponse> {
+        return this.request<DiagramResponse>('/diagrams', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(diagramData),
+        });
+    }
+
+    async getDiagrams( token: string): Promise<DiagramResponse[]> {
+        return this.request<DiagramResponse[]>(`/diagrams`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+        });
+    }
+
+    async getDiagramById(id: string, token: string): Promise<DiagramResponse> {
+        return this.request<DiagramResponse>(`/diagrams/${id}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+        });
+    }
+
+    async updateDiagram(id: string, diagramData: Partial<CreateDiagramData>, token: string): Promise<DiagramResponse> {
+        return this.request<DiagramResponse>(`/diagrams/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify(diagramData),
+        });
+    }
+
+    async deleteDiagram(id: string, token: string): Promise<{ message: string }> {
+        return this.request<{ message: string }>(`/diagrams/${id}`, {
+            method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${token}`,
             },

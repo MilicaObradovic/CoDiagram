@@ -33,7 +33,6 @@ import {CursorOverlay} from "./cursorOverlay.tsx";
 
 
 interface DiagramCanvasProps {
-    toolbarState: ToolbarState;
     selectedShape: ShapeType;
     onShapeCreated: () => void;
 }
