@@ -65,7 +65,7 @@ const Login: React.FC = () => {
             localStorage.setItem('user', JSON.stringify(response.user));
 
             console.log('Login successful:', response.user);
-            navigate('/');
+            navigate('/diagrams');
         } catch (error) {
             console.error('Login failed:', error);
             setApiError(error instanceof Error ? error.message : 'Login failed. Please try again.');

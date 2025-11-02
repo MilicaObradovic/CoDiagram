@@ -67,4 +67,29 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
+router.delete('/:id', auth, async (req, res) => {
+  try {
+    console.log('🟡 Deleting diagram:', req.params.id);
+    
+    const diagram = await Diagram.findById(req.params.id);
+    
+    if (!diagram) {
+      return res.status(404).json({ message: 'Diagram not found' });
+    }
+    
+    // Check if user is the owner of the diagram
+    if (diagram.createdBy.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Not authorized to delete this diagram' });
+    }
+    
+    await Diagram.findByIdAndDelete(req.params.id);
+    
+    console.log('✅ Diagram deleted:', req.params.id);
+    res.json({ message: 'Diagram deleted successfully' });
+  } catch (error) {
+    console.error('❌ Error deleting diagram:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;

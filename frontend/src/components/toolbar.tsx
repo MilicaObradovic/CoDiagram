@@ -48,7 +48,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                 {/* Logo and Title */}
                 <div className="flex w-72 items-center justify-around ">
                     {/* Logo SVG */}
-                    <Link to="/" className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 rounded-lg flex items-center justify-center">
                             <img
                                 src="/logo.png"
@@ -58,7 +58,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                         </div>
                         {/* Title */}
                         <h1 className="text-xl font-bold text-white">CoDiagram</h1>
-                    </Link>
+                    </div>
                 </div>
 
                 <div className="w-px h-6 bg-gray-600"></div>
