@@ -82,7 +82,6 @@ function Home() {
     };
 
     return (
-        <div className="h-screen flex flex-col">
             <div className="flex flex-1">
                 {/* Sidebar with Shape Menu */}
                 <div className="w-80 bg-gray-50 border-r border-gray-200 p-4">
@@ -102,7 +101,6 @@ function Home() {
                     </ReactFlowProvider>
                 </div>
             </div>
-        </div>
     );
 }
 

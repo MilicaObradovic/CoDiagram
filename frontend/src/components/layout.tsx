@@ -18,12 +18,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         setToolbarState(prev => ({...prev, ...newState}));
     };
     return (
-        <div className="h-screen flex flex-col">
+        <div className="h-screen w-screen flex flex-col">
             <Toolbar
                 toolbarState={toolbarState}
                 onToolbarStateChange={handleToolbarStateChange}
             />
-            <main>{children}</main>
+            <main className="flex-1 flex">{children}</main>
         </div>
     );
 };
