@@ -16,7 +16,8 @@ const edgeSchema = new mongoose.Schema({
   id: String,
   source: String,
   target: String,
-  type: String
+  type: String,
+  data: {lineStyle: String}
 });
 
 const diagramSchema = new mongoose.Schema({

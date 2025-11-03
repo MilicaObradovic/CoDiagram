@@ -36,3 +36,17 @@ export interface ErrorResponse {
     message: string;
     error?: string;
 }
+export interface UserSearchResult {
+    id: string;
+    name: string;
+    email: string;
+    avatar?: string;
+}
+export interface CollaboratorsResponse {
+    diagram: {
+        id: string;
+        name: string;
+        createdBy: UserSearchResult;
+    };
+    collaborators: UserSearchResult[];
+}

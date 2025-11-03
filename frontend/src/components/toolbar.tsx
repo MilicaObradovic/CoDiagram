@@ -1,23 +1,53 @@
-import React from 'react';
-import type {ShapeType, ToolbarState} from "../types/diagram.ts";
-import {Link, useNavigate} from "react-router-dom";
+import React, {useEffect, useState} from 'react';
+import type {ToolbarState} from "../types/diagram.ts";
+import {useNavigate, useParams} from "react-router-dom";
+import CollaboratorSearch from "./collaboratorSearch.tsx";
+import type {CollaboratorsResponse, UserSearchResult} from "../types/auth.ts";
+import {authApi} from "../services/authApi.ts";
 
 interface ToolbarProps {
     toolbarState: ToolbarState;
     onToolbarStateChange: (state: Partial<ToolbarState>) => void;
 }
 
-const Toolbar: React.FC<ToolbarProps> = ({
-                                             toolbarState,
-                                             onToolbarStateChange,
-                                         }) => {
-    const tools = [];
+const Toolbar: React.FC<ToolbarProps> = () => {
 
     const navigate = useNavigate();
-
-    // Get user data from localStorage
+    const [showCollaboratorModal, setShowCollaboratorModal] = useState(false);
+    const {id} = useParams();
+    const [collaborators, setCollaborators] = useState<UserSearchResult[]>([]);
+    const [, setError] = useState('');
+    const [, setIsLoading] = useState(true);
+    const [isOwner, setIsOwner] = useState(false);
+    const [owner, setOwner] = useState<UserSearchResult>();
     const userData = localStorage.getItem('user');
     const user = userData ? JSON.parse(userData) : null;
+    useEffect(() => {
+        fetchCollaborators();
+    }, [id, showCollaboratorModal]);
+
+    const fetchCollaborators = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                setError('Not authenticated');
+                return;
+            }
+
+            const response: CollaboratorsResponse = await authApi.getDiagramCollaborators(id, token);
+
+            setCollaborators(response.collaborators);
+            if (user.id === response.diagram.createdBy.id) {
+                setIsOwner(true);
+            }
+            setOwner(response.diagram.createdBy)
+        } catch (error) {
+            console.error('Error fetching collaborators:', error);
+            setError(error instanceof Error ? error.message : 'Failed to load collaborators');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const handleLogout = () => {
         // Your logout logic here (clear tokens, reset state, etc.)
@@ -65,20 +95,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
 
                 {/* Main Tools */}
                 <div className="flex space-x-1">
-                    {tools.map((tool) => (
-                        <button
-                            key={tool.id}
-                            onClick={() => onToolbarStateChange({selectedTool: tool.id})}
-                            className={`p-2 rounded text-lg ${
-                                toolbarState.selectedTool === tool.id
-                                    ? 'bg-blue-600 text-white'
-                                    : 'hover:bg-gray-700'
-                            }`}
-                            title={tool.name}
-                        >
-                            {tool.icon}
-                        </button>
-                    ))}
+
                 </div>
             </div>
 
@@ -86,8 +103,46 @@ const Toolbar: React.FC<ToolbarProps> = ({
             <div className="flex items-center space-x-4">
                 {/* Collaboration Status */}
                 <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="text-sm text-gray-300">Connected</span>
+                    {id && (
+                        <button
+                            onClick={() => setShowCollaboratorModal(true)}
+                            className="flex items-center space-x-2 border border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                            </svg>
+                            <span>Collaborators</span>
+                            {collaborators.length > 0 && (
+                                <span
+                                    className="bg-blue-500 text-white px-1.5 py-0.5 rounded-full text-xs font-semibold min-w-5">
+                                    {collaborators.length}
+                                </span>
+                            )}
+                        </button>
+                    )}
+                    {showCollaboratorModal && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                            <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-lg font-semibold">Add Collaborators</h3>
+                                    <button
+                                        onClick={() => setShowCollaboratorModal(false)}
+                                        className="text-gray-400 hover:text-gray-600"
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+                                <CollaboratorSearch
+                                    diagramId={id}
+                                    currentCollaborators={collaborators || []}
+                                    onClose={() => setShowCollaboratorModal(false)}
+                                    isOwner={isOwner}
+                                    owner={owner}
+                                />
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* User Profile */}

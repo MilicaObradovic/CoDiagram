@@ -18,6 +18,8 @@ app.get('/api/health', (req, res) => {
 });
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/diagrams', require('./routes/diagrams'));
+app.use('/api/users', require('./routes/users'));
+
 
 mongoose.connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,

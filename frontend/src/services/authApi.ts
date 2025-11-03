@@ -1,4 +1,4 @@
-import type { AuthResponse, ErrorResponse } from '../types/auth';
+import type {AuthResponse, CollaboratorsResponse, ErrorResponse, UserSearchResult} from '../types/auth';
 import type {CreateDiagramData, DiagramResponse} from "../types/diagram.ts";
 
 const API_BASE_URL = 'http://localhost:5001/api';
@@ -107,6 +107,35 @@ class AuthApi {
             },
         });
     }
+    async searchUsers(query: string, token: string, limit: number = 10): Promise<UserSearchResult[]> {
+        return this.request<UserSearchResult[]>(`/users/search?q=${encodeURIComponent(query)}&limit=${limit}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+        });
+    }
+
+    async updateDiagramCollaborators(diagramId: string, collaboratorIds: string[], token: string): Promise<DiagramResponse> {
+        return this.request<DiagramResponse>(`/diagrams/${diagramId}/collaborators`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ collaborators: collaboratorIds }),
+        });
+    }
+
+    async getDiagramCollaborators(diagramId: string, token: string): Promise<CollaboratorsResponse> {
+        return this.request<CollaboratorsResponse>(`/diagrams/${diagramId}/collaborators`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+        });
+    }
+
 }
 
 export const authApi = new AuthApi();
