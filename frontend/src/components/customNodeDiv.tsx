@@ -25,9 +25,9 @@ const CustomNodeDiv = ({
     const currentNode = nodes.find(node => node.id === id);
     const currentLabel = (currentNode?.data?.label || data.label) as React.ReactNode;
     const shapeType = data.shapeType || 'rectangle';
-    const width = currentNode?.width || 100;
-    const height = currentNode?.height || 60;
-    // console.log(width, height);
+    const width = currentNode?.measured?.width || 100;
+    const height = currentNode?.measured?.height || 60;
+    console.log(width, height);
 
     const handleSave = useCallback(() => {
         useStore.getState().updateNodeLabel(id, editText);

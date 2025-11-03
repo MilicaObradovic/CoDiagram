@@ -22,7 +22,7 @@ router.get('/', auth, async (req, res) => {
 
 router.post('/', auth, async (req, res) => {
   try {
-    console.log('🟡 Creating diagram with body:', req.body);
+    console.log('Creating diagram with body:', req.body);
     const { name, description, nodes = [], edges = [] } = req.body;
     
     // Validate nodes and edges structure
@@ -34,8 +34,8 @@ router.post('/', auth, async (req, res) => {
         y: node.position?.y || 0
       },
       data: node.data || {},
-      width: node.width || 200,
-      height: node.height || 100,
+      width: node.measured.width || 200,
+      height: node.measured.height || 100,
       selected: node.selected || false,
       dragging: node.dragging || false
     }));
@@ -69,7 +69,7 @@ router.post('/', auth, async (req, res) => {
 
 router.delete('/:id', auth, async (req, res) => {
   try {
-    console.log('🟡 Deleting diagram:', req.params.id);
+    console.log('Deleting diagram:', req.params.id);
     
     const diagram = await Diagram.findById(req.params.id);
     
@@ -84,10 +84,124 @@ router.delete('/:id', auth, async (req, res) => {
     
     await Diagram.findByIdAndDelete(req.params.id);
     
-    console.log('✅ Diagram deleted:', req.params.id);
+    console.log('Diagram deleted:', req.params.id);
     res.json({ message: 'Diagram deleted successfully' });
   } catch (error) {
-    console.error('❌ Error deleting diagram:', error);
+    console.error('Error deleting diagram:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+router.get('/:id', auth, async (req, res) => {
+  try {
+    console.log('Fetching diagram by ID:', req.params.id);
+    
+    const diagram = await Diagram.findById(req.params.id);
+    
+    if (!diagram) {
+      return res.status(404).json({ message: 'Diagram not found' });
+    }
+    
+    // Check if user has access to this diagram
+    if (diagram.createdBy.toString() !== req.user.id && 
+        !diagram.collaborators?.includes(req.user.id)) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+    
+    console.log('Diagram found:', diagram.name);
+    res.json(diagram);
+  } catch (error) {
+    console.error('Error fetching diagram:', error);
+    
+    if (error.name === 'CastError') {
+      return res.status(400).json({ message: 'Invalid diagram ID' });
+    }
+    
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+router.put('/:id', auth, async (req, res) => {
+  try {
+    console.log('Updating diagram:', req.params.id);
+    console.log('Update data:', req.body);
+    
+    const { name, description, nodes, edges, viewport } = req.body;
+    
+    const diagram = await Diagram.findById(req.params.id);
+    
+    if (!diagram) {
+      return res.status(404).json({ message: 'Diagram not found' });
+    }
+    
+    // Check if user has access to this diagram
+    if (diagram.createdBy.toString() !== req.user.id && 
+        !diagram.collaborators?.includes(req.user.id)) {
+      return res.status(403).json({ message: 'Not authorized to update this diagram' });
+    }
+    
+    // Build update object with only provided fields
+    const updateData = {};
+    
+    if (name !== undefined) updateData.name = name;
+    if (description !== undefined) updateData.description = description;
+    if (nodes !== undefined) {
+      // Validate and structure nodes
+      updateData.nodes = nodes.map(node => ({
+        id: node.id,
+        type: node.type || 'default',
+        position: {
+          x: node.position?.x || 0,
+          y: node.position?.y || 0
+        },
+        data: node.data || {},
+        width: node.measured.width || 200,
+        height: node.measured.height || 100,
+        selected: node.selected || false,
+        dragging: node.dragging || false
+      }));
+    }
+    
+    if (edges !== undefined) {
+      // Validate and structure edges
+      updateData.edges = edges.map(edge => ({
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        sourceHandle: edge.sourceHandle || null,
+        targetHandle: edge.targetHandle || null,
+        type: edge.type || 'default',
+        data: edge.data || {},
+        selected: edge.selected || false
+      }));
+    }
+    
+    if (viewport !== undefined) {
+      updateData.viewport = {
+        x: viewport.x || 0,
+        y: viewport.y || 0,
+        zoom: viewport.zoom || 1
+      };
+    }
+    
+    // Update the diagram
+    const updatedDiagram = await Diagram.findByIdAndUpdate(
+      req.params.id,
+      { 
+        ...updateData,
+        updatedAt: new Date() // Force update timestamp
+      },
+      { new: true } // Return the updated document
+    );
+    
+    console.log('Diagram updated:', updatedDiagram.name);
+    res.json(updatedDiagram);
+  } catch (error) {
+    console.error('Error updating diagram:', error);
+    
+    if (error.name === 'CastError') {
+      return res.status(400).json({ message: 'Invalid diagram ID' });
+    }
+    
     res.status(500).json({ message: 'Server error' });
   }
 });

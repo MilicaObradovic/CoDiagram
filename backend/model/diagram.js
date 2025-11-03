@@ -7,6 +7,8 @@ const nodeSchema = new mongoose.Schema({
     x: Number,
     y: Number
   },
+  width:Number,
+  height:Number,
   data: mongoose.Schema.Types.Mixed
 });
 

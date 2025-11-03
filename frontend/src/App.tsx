@@ -9,7 +9,7 @@ import Layout from "./components/layout.tsx";
 function App() {
     return (
         <Routes>
-            <Route path="/" element={
+            <Route path="/diagram/:id" element={
                 <Layout>
                     <Home />
                 </Layout>
