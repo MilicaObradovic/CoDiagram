@@ -51,7 +51,8 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
         canRedo,
         onEdgeClick,
         setNodes,
-        setEdges
+        setEdges,
+        createNode,
     } = useStore();
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
     const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
@@ -71,7 +72,6 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
         // Set up observers for Yjs -> React Flow sync
         yNodes.observe(() => {
             const yjsNodes = Array.from(yNodes.values());
-            console.log('🟠 Yjs -> React Flow sync - nodes:', yjsNodes.length);
             setNodes(yjsNodes, "yjs");
         });
 
@@ -323,7 +323,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
         // add to Yjs
         const yNodes = yDoc.getMap('nodes');
         yNodes.set(newNode.id, newNode);
-
+        createNode(newNode);
         // console.log('Added new shape via Y.js:', newNode.id);
         // console.log('Y.js nodes after creation:', Array.from(yNodes.keys()));
 

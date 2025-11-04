@@ -19,6 +19,7 @@ function Diagram() {
     const {
         nodes,
         edges,
+        setLoadedNodesAndEdges,
         initializeYjs
     } = useStore();
     const [yDoc, setYDoc] = useState<Y.Doc | null>(null);
@@ -73,6 +74,7 @@ function Diagram() {
             diagramData.edges.forEach((edge: Edge) => {
                 yEdges.set(edge.id, edge);
             });
+            setLoadedNodesAndEdges(diagramData.nodes, diagramData.edges);
 
         } catch (error) {
             console.error('Error loading diagram:', error);

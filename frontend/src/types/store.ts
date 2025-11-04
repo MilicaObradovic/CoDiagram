@@ -9,6 +9,8 @@ export type StoreState = {
     yDoc: Y.Doc;
     isInitialized: boolean;
     initializeYjs: (doc: Y.Doc)=>void;
+    createNode: (node: Node) => void;
+    setLoadedNodesAndEdges: (nodes: Node[], edges: Edge[])=>void;
     setNodes: (nodes: Node[], origin:string) => void;
     setEdges: (edges: Edge[], origin:string) => void;
     nextNodeId: number,
@@ -27,4 +29,5 @@ export type StoreState = {
 export interface HistoryState {
     nodes: Node[];
     edges: Edge[];
+    type: string;
 }

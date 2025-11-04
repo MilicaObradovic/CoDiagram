@@ -18,7 +18,7 @@ export const UndoRedo = {
     },
 
     canUndo(): boolean {
-        return this.position > 0;
+        return this.position > 0 && this.history[this.position - 1].type != "loaded";
     },
 
     canRedo(): boolean {
