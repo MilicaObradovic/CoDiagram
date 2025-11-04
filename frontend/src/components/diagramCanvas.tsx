@@ -17,8 +17,7 @@ import {
     type EdgeType,
     EdgeTypes, getShapeDimensions,
     type LineStyle, LineStyles,
-    type ShapeType,
-    type ToolbarState
+    type ShapeType
 } from "../types/diagram.ts";
 import CustomNodeDiv from './customNodeDiv.tsx'
 import DownloadButton from "./downloadButton.tsx";
@@ -28,16 +27,17 @@ import {useStore} from '../store';
 import EdgeToolbar from "./edgeToolbar.tsx";
 import {WebsocketProvider} from "y-websocket";
 import * as Y from 'yjs';
-import {UndoRedo} from "../store/undo-redo.ts";
 import {CursorOverlay} from "./cursorOverlay.tsx";
 
 
 interface DiagramCanvasProps {
     selectedShape: ShapeType;
     onShapeCreated: () => void;
+    yDoc: Y.Doc | null;
+    provider:WebsocketProvider | null;
 }
 
-const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCreated}) => {
+const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCreated, yDoc, provider}) => {
     // Zustand store for undo/redo and state management
     const {
         nodes,
@@ -59,31 +59,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
     const [selectedEdgeType, setSelectedEdgeType] = useState<EdgeType>(EdgeTypes.STEP);
     const [selectedEdgeId, setSelectedEdgeId] = useState<string | undefined>(undefined);
     const [selectedLineStyle, setSelectedLineStyle] = useState<LineStyle>(LineStyles.SOLID);
-    // Yjs state
-    const [yDoc, setYDoc] = useState<Y.Doc | null>(null);
-    const [provider, setProvider] = useState<WebsocketProvider | null>(null);
 
-    // Yjs initialization
-    useEffect(() => {
-        const doc = new Y.Doc();
-        UndoRedo.setYDoc(doc);
-
-        const wsProvider = new WebsocketProvider(
-            'ws://localhost:1234/diagram-room-1',
-            '',
-            doc
-        );
-        useStore.getState().initializeYjs(doc);
-        console.log('Y.js initialized with simple server');
-        setYDoc(doc);
-        setProvider(wsProvider);
-
-        return () => {
-            UndoRedo.setYDoc(null);
-            wsProvider.destroy();
-            doc.destroy();
-        };
-    }, []);
 
     // Yjs -> React Flow synchronization
     useEffect(() => {
@@ -95,6 +71,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
         // Set up observers for Yjs -> React Flow sync
         yNodes.observe(() => {
             const yjsNodes = Array.from(yNodes.values());
+            console.log('🟠 Yjs -> React Flow sync - nodes:', yjsNodes.length);
             setNodes(yjsNodes, "yjs");
         });
 
@@ -358,7 +335,6 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
         if (selectedShape && reactFlowInstance) {
             // console.log('Creating shape:', selectedShape);
             createNewShape(selectedShape);
-            onShapeCreated();
         }
     }, [selectedShape, reactFlowInstance, createNewShape, onShapeCreated]);
 
@@ -437,8 +413,8 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
     }), [selectedEdgeType, selectedLineStyle]);
 
     return (
-        <div style={{width: '100%', height: '100%'}} className="flex">
-            <div className="flex-1" id="diagram-container">
+        <div style={{width: '100%', height: '100%'}} className="flex relative">
+            <div className="flex-1 relative" id="diagram-container">
                 <ReactFlow
                     tabIndex={0}
                     nodes={nodes}

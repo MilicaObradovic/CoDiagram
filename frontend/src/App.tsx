@@ -1,7 +1,7 @@
 import './App.css';
 import Login from "./components/login.tsx";
 import {Navigate, Route, Routes} from "react-router-dom";
-import Home from "./components/home.tsx";
+import Diagram from "./components/diagram.tsx";
 import Register from "./components/registration.tsx";
 import DiagramsPage from "./components/diagramsList.tsx";
 import Layout from "./components/layout.tsx";
@@ -12,7 +12,7 @@ function App() {
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/diagram/:id" element={
                 <Layout>
-                    <Home />
+                    <Diagram />
                 </Layout>
             } />
             <Route path="/diagrams" element={

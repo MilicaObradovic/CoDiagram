@@ -13,6 +13,7 @@ const useStore = create<StoreState>((set, get) => ({
     edges: [],
     nextNodeId: 1,
     isInitialized: false,
+    yDoc: null,
 
     initializeYjs: (doc: Y.Doc) => {
         const yNodes = doc.getMap('nodes'); // Change from getArray to getMap
@@ -24,7 +25,8 @@ const useStore = create<StoreState>((set, get) => ({
         set({
             nodes: initialNodes,
             edges: initialEdges,
-            isInitialized: true
+            isInitialized: true,
+            yDoc:doc
         });
 
         // Store references
@@ -33,7 +35,7 @@ const useStore = create<StoreState>((set, get) => ({
     },
 
     setNodes: (nodes: Node[], origin: 'user' | 'yjs' | 'undo-redo' = 'user') => {
-        set({nodes});
+        set({nodes:nodes});
 
         // save history only for user activity
         if (origin === 'user') {
@@ -42,7 +44,7 @@ const useStore = create<StoreState>((set, get) => ({
     },
 
     setEdges: (edges: Edge[], origin: 'user' | 'yjs' | 'undo-redo' = 'user') => {
-        set({edges});
+        set({edges:edges});
 
         if (origin === 'user') {
             UndoRedo.addHistory({nodes: get().nodes, edges: get().edges});

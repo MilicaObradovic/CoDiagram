@@ -1,4 +1,4 @@
-import type {AuthResponse, CollaboratorsResponse, ErrorResponse, UserSearchResult} from '../types/auth';
+import type {AuthResponse, CollaboratorsResponse, UserSearchResult} from '../types/auth';
 import type {CreateDiagramData, DiagramResponse} from "../types/diagram.ts";
 
 const API_BASE_URL = 'http://localhost:5001/api';
@@ -88,7 +88,7 @@ class AuthApi {
         });
     }
 
-    async updateDiagram(id: string, diagramData: Partial<CreateDiagramData>, token: string): Promise<DiagramResponse> {
+    async updateDiagram(id: string|undefined, diagramData: Partial<CreateDiagramData>, token: string): Promise<DiagramResponse> {
         return this.request<DiagramResponse>(`/diagrams/${id}`, {
             method: 'PUT',
             headers: {

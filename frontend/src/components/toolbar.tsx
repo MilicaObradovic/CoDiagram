@@ -28,6 +28,8 @@ const Toolbar: React.FC<ToolbarProps> = () => {
 
     const fetchCollaborators = async () => {
         try {
+            if(id==undefined)
+                return;
             const token = localStorage.getItem('token');
             if (!token) {
                 setError('Not authenticated');
@@ -50,14 +52,8 @@ const Toolbar: React.FC<ToolbarProps> = () => {
     };
 
     const handleLogout = () => {
-        // Your logout logic here (clear tokens, reset state, etc.)
-        console.log('Logging out...');
-
-        // Clear authentication state
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-
-        // Redirect to login page
         navigate('/login');
     };
     // Get user initials for avatar

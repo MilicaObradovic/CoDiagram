@@ -6,6 +6,7 @@ import * as Y from "yjs";
 export type StoreState = {
     nodes: Node[];
     edges: Edge[];
+    yDoc: Y.Doc;
     isInitialized: boolean;
     initializeYjs: (doc: Y.Doc)=>void;
     setNodes: (nodes: Node[], origin:string) => void;

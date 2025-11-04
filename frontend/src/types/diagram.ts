@@ -1,4 +1,5 @@
 import type {Edge} from "reactflow";
+import type { Node} from "@xyflow/react";
 
 export interface Shape {
     id: string;
@@ -18,9 +19,6 @@ export interface CustomNodeData {
     shapeType?: ShapeType;
 }
 
-export interface CustomNode extends Node {
-    data: CustomNodeData;
-}
 
 export const ShapeTypes = {
     // Basic Shapes

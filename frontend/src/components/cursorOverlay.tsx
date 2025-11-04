@@ -1,5 +1,5 @@
 import * as Y from 'yjs';
-import {useEffect, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import {WebsocketProvider} from "y-websocket";
 import {useReactFlow, type Viewport} from "@xyflow/react";
 
@@ -12,8 +12,9 @@ interface CursorPosition {
 
 interface CursorOverlayProps {
     yDoc: Y.Doc | null;
-    provider: WebsocketProvider|null;
+    provider: WebsocketProvider | null;
 }
+
 interface CursorPosition {
     x: number;
     y: number;
@@ -24,16 +25,16 @@ interface CursorPosition {
     viewport: Viewport;
 }
 
-export const CursorOverlay = ({ yDoc, provider }: CursorOverlayProps) => {
+export const CursorOverlay = ({yDoc, provider}: CursorOverlayProps) => {
     const [cursors, setCursors] = useState<Map<string, CursorPosition>>(new Map());
-    const { screenToFlowPosition, getViewport } = useReactFlow();
-
+    const {screenToFlowPosition, getViewport, flowToScreenPosition} = useReactFlow();
     useEffect(() => {
-        if (!yDoc || !provider) return;
+        if (!yDoc || !provider) {
+            return;
+        }
 
         const yCursors = yDoc.getMap<CursorPosition>('cursors');
         const currentClientId = provider.awareness.clientID.toString();
-
         const updateCursors = () => {
             const currentCursors = new Map(Array.from(yCursors.entries()));
 
@@ -44,10 +45,8 @@ export const CursorOverlay = ({ yDoc, provider }: CursorOverlayProps) => {
                     otherCursors.set(userId, cursor);
                 }
             });
-
             setCursors(otherCursors);
         };
-
         yCursors.observe(updateCursors);
 
         const handleMouseMove = (event: MouseEvent) => {
@@ -59,7 +58,7 @@ export const CursorOverlay = ({ yDoc, provider }: CursorOverlayProps) => {
             const y = event.clientY - bounds.top;
 
             if (x >= 0 && y >= 0 && x <= bounds.width && y <= bounds.height) {
-                const flowPosition = screenToFlowPosition({ x: x, y: y });
+                const flowPosition = screenToFlowPosition({x: x, y: y});
                 const cursorData = {
                     x: flowPosition.x,
                     y: flowPosition.y,
@@ -77,15 +76,19 @@ export const CursorOverlay = ({ yDoc, provider }: CursorOverlayProps) => {
         const handleMouseLeave = () => {
             yCursors.delete(currentClientId);
         };
+        yCursors.clear();
+        const initTimer = setTimeout(() => {
 
-        const container = document.getElementById('diagram-container');
-        if (container) {
-            container.addEventListener('mousemove', handleMouseMove);
-            container.addEventListener('mouseleave', handleMouseLeave);
-        }
-        updateCursors();
+            const container = document.getElementById('diagram-container');
+            if (container) {
+                container.addEventListener('mousemove', handleMouseMove);
+                container.addEventListener('mouseleave', handleMouseLeave);
+            }
+            setTimeout(updateCursors, 100);
 
+        }, 300);
         return () => {
+            clearTimeout(initTimer);
             yCursors.unobserve(updateCursors);
             yCursors.delete(currentClientId);
 
@@ -94,10 +97,9 @@ export const CursorOverlay = ({ yDoc, provider }: CursorOverlayProps) => {
                 container.removeEventListener('mousemove', handleMouseMove);
                 container.removeEventListener('mouseleave', handleMouseLeave);
             }
-        };
-    }, [yDoc, provider, screenToFlowPosition, getViewport]);
-    const { flowToScreenPosition } = useReactFlow();
 
+        };
+    }, [yDoc, provider, screenToFlowPosition, getViewport, flowToScreenPosition]);
     return (
         <div style={{
             position: 'absolute',
@@ -129,7 +131,7 @@ export const CursorOverlay = ({ yDoc, provider }: CursorOverlayProps) => {
                             pointerEvents: 'none',
                             border: '2px solid white',
                             boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
-                            transition: 'left 0.1s ease, top 0.1s ease'
+                            transition: 'left 0.1s ease, top 0.1s ease',
                         }}
                     >
                         <div style={{
