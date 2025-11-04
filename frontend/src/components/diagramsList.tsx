@@ -35,7 +35,7 @@ const DiagramsPage: React.FC = () => {
 
     const fetchDiagrams = async () => {
         try {
-            const userData = localStorage.getItem('user');
+            const userData = sessionStorage.getItem('user');
             console.log('Raw user data:', userData); // This will show the string
 
             // Parse the JSON string to get the user object
@@ -43,7 +43,7 @@ const DiagramsPage: React.FC = () => {
             const id = user?.id; // Now you can access the id property
             console.log('User ID:', id);
             setLoggedUserId(id)
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             console.log(token);
             if (!token) {
                 navigate('/login');
@@ -72,7 +72,7 @@ const DiagramsPage: React.FC = () => {
         if (!newDiagramName.trim()) return;
 
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             if (!token) {
                 navigate('/login');
                 return;
@@ -114,7 +114,7 @@ const DiagramsPage: React.FC = () => {
         if (!deleteModal.diagramId) return;
 
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             if (!token) return;
 
             await authApi.deleteDiagram(deleteModal.diagramId, token);

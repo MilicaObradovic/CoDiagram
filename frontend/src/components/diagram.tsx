@@ -32,7 +32,7 @@ function Diagram() {
 
     const initializeYjsAndLoadDiagram = async (diagramId: string) => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             if (!token) {
                 console.log('Not authenticated');
                 return;
@@ -84,7 +84,7 @@ function Diagram() {
     const useDebouncedSave = (diagramId: string | undefined, nodes: Node[], edges: Edge[], delay: number = 3000) => {
         const saveDiagram = useCallback(async () => {
             try {
-                const token = localStorage.getItem('token');
+                const token = sessionStorage.getItem('token');
                 if (!token) return;
 
                 await authApi.updateDiagram(diagramId, {nodes, edges}, token);

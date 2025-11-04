@@ -42,7 +42,7 @@ const CollaboratorSearch: React.FC<CollaboratorSearchProps> = ({
 
         setIsSearching(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             if (!token) return;
 
             const users = await authApi.searchUsers(query, token);
@@ -85,7 +85,7 @@ const CollaboratorSearch: React.FC<CollaboratorSearchProps> = ({
 
     const handleSaveCollaborators = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             if (!token) return;
 
             const collaboratorIds = selectedCollaborators.map(collab => collab.id);

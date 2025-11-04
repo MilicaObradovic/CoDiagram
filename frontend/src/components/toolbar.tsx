@@ -20,7 +20,7 @@ const Toolbar: React.FC<ToolbarProps> = () => {
     const [, setIsLoading] = useState(true);
     const [isOwner, setIsOwner] = useState(false);
     const [owner, setOwner] = useState<UserSearchResult>();
-    const userData = localStorage.getItem('user');
+    const userData = sessionStorage.getItem('user');
     const user = userData ? JSON.parse(userData) : null;
     useEffect(() => {
         fetchCollaborators();
@@ -30,7 +30,7 @@ const Toolbar: React.FC<ToolbarProps> = () => {
         try {
             if(id==undefined)
                 return;
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             if (!token) {
                 setError('Not authenticated');
                 return;
@@ -52,8 +52,8 @@ const Toolbar: React.FC<ToolbarProps> = () => {
     };
 
     const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('user');
         navigate('/login');
     };
     // Get user initials for avatar
