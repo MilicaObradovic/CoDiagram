@@ -61,7 +61,6 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
     const [selectedEdgeId, setSelectedEdgeId] = useState<string | undefined>(undefined);
     const [selectedLineStyle, setSelectedLineStyle] = useState<LineStyle>(LineStyles.SOLID);
 
-
     // Yjs -> React Flow synchronization
     useEffect(() => {
         if (!yDoc) return;
@@ -417,6 +416,10 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
             <div className="flex-1 relative" id="diagram-container">
                 <ReactFlow
                     tabIndex={0}
+                    translateExtent={[
+                        [-2000, -2000],
+                        [2000, 2000]
+                    ]}
                     nodes={nodes}
                     edges={edges}
                     edgeTypes={edgeTypes}
@@ -438,14 +441,9 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
                     defaultEdgeOptions={defaultEdgeOptions}
                     connectionLineType={getConnectionLineType(selectedEdgeType)}
                     connectionLineStyle={getConnectionLineStyle(selectedLineStyle)}
-                    defaultViewport={{
-                        x: 0,
-                        y: 0,
-                        zoom: 1
-                    }}
                     fitView={false}
-                    minZoom={0.1}
-                    maxZoom={10}
+                    minZoom={0.5}
+                    maxZoom={1}
                     connectionMode={ConnectionMode.Loose}
                 >
                     <Controls showZoom={true}
