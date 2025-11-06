@@ -7,6 +7,8 @@ export type StoreState = {
     nodes: Node[];
     edges: Edge[];
     yDoc: Y.Doc;
+    currentUserId: string | null;
+    setCurrentUser: (userId: string) => void;
     isInitialized: boolean;
     initializeYjs: (doc: Y.Doc)=>void;
     createNode: (node: Node) => void;
@@ -17,13 +19,12 @@ export type StoreState = {
     onNodesChange: OnNodesChange;
     onEdgesChange: OnEdgesChange;
     onConnect: OnConnect;
-    updateNodeLabel: (nodeId: string, label: string) => void;
-    updateEdgeLabel: (nodeId: string, label: string) => void;
+    updateNodeLabel: (nodeId: string, label: string, origin?: string) => void;
     undo: () => void;
     redo: () => void;
     canUndo: () => boolean;
     canRedo: () => boolean;
-    onEdgeClick: (edgeId: string, edgeType:EdgeType, lineStyle?: LineStyle) => void;
+    onEdgeClick: (edgeId: string, edgeType: EdgeType, lineStyle?: LineStyle, origin?: string) => void;
 };
 
 export interface HistoryState {

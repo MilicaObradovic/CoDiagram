@@ -16,6 +16,7 @@ const Toolbar: React.FC<ToolbarProps> = () => {
     const [showCollaboratorModal, setShowCollaboratorModal] = useState(false);
     const {id} = useParams();
     const [collaborators, setCollaborators] = useState<UserSearchResult[]>([]);
+    const [diagramName, setDiagramName] = useState<string>('');
     const [, setError] = useState('');
     const [, setIsLoading] = useState(true);
     const [isOwner, setIsOwner] = useState(false);
@@ -28,8 +29,10 @@ const Toolbar: React.FC<ToolbarProps> = () => {
 
     const fetchCollaborators = async () => {
         try {
-            if(id==undefined)
+            if(id==undefined){
+                setDiagramName("")
                 return;
+            }
             const token = sessionStorage.getItem('token');
             if (!token) {
                 setError('Not authenticated');
@@ -43,6 +46,7 @@ const Toolbar: React.FC<ToolbarProps> = () => {
                 setIsOwner(true);
             }
             setOwner(response.diagram.createdBy)
+            setDiagramName(response.diagram.name);
         } catch (error) {
             console.error('Error fetching collaborators:', error);
             setError(error instanceof Error ? error.message : 'Failed to load collaborators');
@@ -88,12 +92,15 @@ const Toolbar: React.FC<ToolbarProps> = () => {
                 </div>
 
                 <div className="w-px h-6 bg-gray-600"></div>
-
-                {/* Main Tools */}
-                <div className="flex space-x-1">
-
+            </div>
+            {/* Center Section - Diagram Name */}
+            <div className="flex-1 flex justify-center">
+                <div className="text-xl font-semibold text-white px-4 py-2 bg-gray-700/30 rounded-xl">
+                    {diagramName}
                 </div>
             </div>
+
+
 
             {/* Right Section - User Info & Controls */}
             <div className="flex items-center space-x-4">

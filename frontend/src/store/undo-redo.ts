@@ -4,91 +4,153 @@ import * as Y from 'yjs';
 export const UndoRedo = {
     debugMode: 0,
     maxHistory: 50,
-    history: [] as HistoryState[],
-    position: 0,
+    userHistories: new Map<string, { history: HistoryState[], position: number }>(),
+    currentUserId: null as string | null,
     yDoc: null as Y.Doc | null,
 
     setYDoc(doc: Y.Doc|null): void {
         this.yDoc = doc;
     },
 
-    reset(item: HistoryState): void {
-        this.history = [structuredClone(item)];
-        this.position = 0;
+    setCurrentUser(userId: string): void {
+        this.currentUserId = userId;
+        if (!this.userHistories.has(userId)) {
+            this.userHistories.set(userId, { history: [], position: 0 });
+        }
     },
 
-    canUndo(): boolean {
-        return this.position > 0 && this.history[this.position - 1].type != "loaded";
+    reset(userId: string, item: HistoryState): void {
+        if (!this.userHistories.has(userId)) {
+            this.userHistories.set(userId, { history: [], position: 0 });
+        }
+        const userHistory = this.userHistories.get(userId)!;
+        userHistory.history = [structuredClone(item)];
+        userHistory.position = 0;
     },
 
-    canRedo(): boolean {
-        return this.position < this.history.length - 1;
+    canUndo(userId?: string): boolean {
+        const targetUserId = userId || this.currentUserId;
+        if (!targetUserId) return false;
+
+        const userHistory = this.userHistories.get(targetUserId);
+        return userHistory ? userHistory.position > 0 && userHistory.history[userHistory.position - 1].type !== "loaded" : false;
     },
 
-    undo(): HistoryState | undefined {
-        if (this.canUndo()) {
-            this.position--;
-            this.debug('undo');
-            const state = this.history[this.position]
+    canRedo(userId?: string): boolean {
+        const targetUserId = userId || this.currentUserId;
+        if (!targetUserId) return false;
+
+        const userHistory = this.userHistories.get(targetUserId);
+        return userHistory ? userHistory.position < userHistory.history.length - 1 : false;
+    },
+
+    undo(userId?: string): HistoryState | undefined {
+        const targetUserId = userId || this.currentUserId;
+        if (!targetUserId) return;
+
+        const userHistory = this.userHistories.get(targetUserId);
+        if (userHistory && userHistory.position > 0) {
+            userHistory.position--;
+            this.debug('undo', targetUserId);
+            const state = userHistory.history[userHistory.position];
+
             if (this.yDoc && state) {
-                this.applyStateToYjs(state);
+                this.applyUserStateToYjs(targetUserId, state);
             }
             return state;
         }
     },
 
-    redo(): HistoryState | undefined {
-        if (this.canRedo()) {
-            this.position++;
-            this.debug('redo');
-            const state = this.history[this.position];
+    redo(userId?: string): HistoryState | undefined {
+        const targetUserId = userId || this.currentUserId;
+        if (!targetUserId) return;
 
-            // if Y.js, change state with Y.js
+        const userHistory = this.userHistories.get(targetUserId);
+        if (userHistory && userHistory.position < userHistory.history.length - 1) {
+            userHistory.position++;
+            this.debug('redo', targetUserId);
+            const state = userHistory.history[userHistory.position];
+
             if (this.yDoc && state) {
-                this.applyStateToYjs(state);
+                this.applyUserStateToYjs(targetUserId, state);
             }
-
             return state;
         }
     },
-    applyStateToYjs(state: HistoryState): void {
+
+    applyUserStateToYjs(userId: string, state: HistoryState): void {
         if (!this.yDoc) return;
 
         this.yDoc.transact(() => {
             const yNodes = this.yDoc!.getMap('nodes');
             const yEdges = this.yDoc!.getMap('edges');
 
-            // delete current state
-            yNodes.clear();
-            yEdges.clear();
+            // For undo/redo, we only revert changes made by this specific user
+            // This prevents affecting other users' work
+            state.nodes.forEach(node => {
+                const currentYNode = yNodes.get(node.id);
+                // Only update if this user owns the node or it's in the desired state
+                if (node.data?.createdBy === userId || !currentYNode) {
+                    yNodes.set(node.id, node);
+                }
+            });
 
-            // apply new state
-            state.nodes.forEach(node => yNodes.set(node.id, node));
-            state.edges.forEach(edge => yEdges.set(edge.id, edge));
-        }, 'undo-redo');
+            state.edges.forEach(edge => {
+                const currentYEdge = yEdges.get(edge.id);
+                if (edge.data?.createdBy === userId || !currentYEdge) {
+                    yEdges.set(edge.id, edge);
+                }
+            });
 
-        console.log('Applied undo/redo state to Y.js');
+            // Remove nodes/edges that were deleted by this user
+            const currentYNodes = Array.from(yNodes.values());
+            const currentYEdges = Array.from(yEdges.values());
+
+            currentYNodes.forEach(currentNode => {
+                const shouldExist = state.nodes.some(node => node.id === currentNode.id);
+                if (!shouldExist && currentNode.data?.createdBy === userId) {
+                    yNodes.delete(currentNode.id);
+                }
+            });
+
+            currentYEdges.forEach(currentEdge => {
+                const shouldExist = state.edges.some(edge => edge.id === currentEdge.id);
+                if (!shouldExist && currentEdge.data?.createdBy === userId) {
+                    yEdges.delete(currentEdge.id);
+                }
+            });
+        }, `undo-redo-${userId}`);
     },
 
+    addUserHistory(userId: string, item: HistoryState): void {
+        if (!this.userHistories.has(userId)) {
+            this.userHistories.set(userId, { history: [], position: 0 });
+        }
 
-    addHistory(item: HistoryState): void {
-        this.history =
-            this.history.slice(0, this.position + 1)
-                .concat(structuredClone(item))
-                .slice(-this.maxHistory);
-        this.position = this.history.length - 1;
-        this.debug('addHistory');
+        const userHistory = this.userHistories.get(userId)!;
+        userHistory.history = userHistory.history
+            .slice(0, userHistory.position + 1)
+            .concat(structuredClone(item))
+            .slice(-this.maxHistory);
+        userHistory.position = userHistory.history.length - 1;
+        this.debug('addHistory', userId);
     },
 
-    debug(cmd: string): void {
+    debug(cmd: string, userId?: string): void {
         if (!this.debugMode) return;
-        const {history, position} = this;
+        const targetUserId = userId || this.currentUserId;
+        if (!targetUserId) return;
+
+        const userHistory = this.userHistories.get(targetUserId);
+        if (!userHistory) return;
+
+        const {history, position} = userHistory;
         const ret = ['undo', 'redo'].indexOf(cmd) !== -1 ?
-            '=> ' + this.history[this.position] : '';
-        const canUndo = this.canUndo();
-        const canRedo = this.canRedo();
+            '=> ' + history[position] : '';
+        const canUndo = this.canUndo(targetUserId);
+        const canRedo = this.canRedo(targetUserId);
         console.log(
-            cmd, {history, position, canUndo, canRedo}, ret
+            `User ${targetUserId}:`, cmd, {history, position, canUndo, canRedo}, ret
         );
     }
 };

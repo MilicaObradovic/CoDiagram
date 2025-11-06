@@ -83,9 +83,13 @@ const ShapeMenu: React.FC<ShapeMenuProps> = ({onShapeSelect, selectedShape}) => 
     };
 
     const handleShapeSelect = (shapeType: ShapeType) => {
+        console.log('Shape clicked:', shapeType);
+        // Prevent multiple calls
+        if (selectedShape === shapeType) {
+            return;
+        }
         onShapeSelect(shapeType);
     };
-
     const getShapesByCategory = (categoryId: DiagramCategory) => {
         return shapeDefinitions.filter(shape => shape.category === categoryId);
     };

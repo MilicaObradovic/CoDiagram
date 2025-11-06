@@ -53,6 +53,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
         setNodes,
         setEdges,
         createNode,
+        setCurrentUser
     } = useStore();
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
     const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
@@ -60,6 +61,14 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
     const [selectedEdgeType, setSelectedEdgeType] = useState<EdgeType>(EdgeTypes.STEP);
     const [selectedEdgeId, setSelectedEdgeId] = useState<string | undefined>(undefined);
     const [selectedLineStyle, setSelectedLineStyle] = useState<LineStyle>(LineStyles.SOLID);
+    const shapeCreationTimeout = useRef<NodeJS.Timeout>();
+
+    useEffect(() => {
+        if (provider) {
+            const userId = provider.awareness.clientID.toString();
+            setCurrentUser(userId);
+        }
+    }, [provider]);
 
     // Yjs -> React Flow synchronization
     useEffect(() => {
@@ -97,6 +106,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
             onNodesChange: (changes) => {
                 changes.forEach(change => {
                     if (change.type === 'add') {
+                        console.log("ADDDDD")
                         yNodes.set(change.item.id, change.item);
                     } else if (change.type === 'remove') {
                         yNodes.delete(change.id);
@@ -291,10 +301,6 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
         if (key === 'Shift-Meta-z') redo();
     };
 
-    const onInit = useCallback((instance: ReactFlowInstance) => {
-        setReactFlowInstance(instance);
-    }, []);
-
     const createNewShape = useCallback((shapeType: string) => {
         if (!reactFlowInstance || !yDoc) {
             console.log('Cannot create shape: missing reactFlowInstance or yDoc');
@@ -322,17 +328,13 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
         // add to Yjs
         const yNodes = yDoc.getMap('nodes');
         yNodes.set(newNode.id, newNode);
-        createNode(newNode);
-        // console.log('Added new shape via Y.js:', newNode.id);
-        // console.log('Y.js nodes after creation:', Array.from(yNodes.keys()));
-
+        // createNode(newNode);
+        //FIX 
         onShapeCreated();
     }, [reactFlowInstance, yDoc, onShapeCreated]);
 
     useEffect(() => {
-        // console.log('selectedShape changed:', selectedShape);
         if (selectedShape && reactFlowInstance) {
-            // console.log('Creating shape:', selectedShape);
             createNewShape(selectedShape);
         }
     }, [selectedShape, reactFlowInstance, createNewShape, onShapeCreated]);
@@ -410,15 +412,27 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
             height: 30,
         },
     }), [selectedEdgeType, selectedLineStyle]);
-
+    const onInit = (reactFlowInstance: { setViewport: (arg0: { x: number; y: number; zoom: number; }, arg1: { duration: number; }) => void; }) => {
+        // Calculate center point of your translateExtent
+        const translateExtent = [[-5000, -5000], [3000, 3000]];
+        const centerX = (translateExtent[0][0] + translateExtent[1][0]) / 2;
+        const centerY = (translateExtent[0][1] + translateExtent[1][1]) / 2;
+        setReactFlowInstance(reactFlowInstance);
+        // Center the viewport
+        reactFlowInstance.setViewport({
+            x: -centerX,
+            y: -centerY,
+            zoom: 1
+        }, { duration: 0 });
+    };
     return (
         <div style={{width: '100%', height: '100%'}} className="flex relative">
             <div className="flex-1 relative" id="diagram-container">
                 <ReactFlow
                     tabIndex={0}
                     translateExtent={[
-                        [-2000, -2000],
-                        [2000, 2000]
+                        [-5000, -5000],
+                        [3000, 3000]
                     ]}
                     nodes={nodes}
                     edges={edges}
