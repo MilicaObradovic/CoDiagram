@@ -2,7 +2,6 @@ import type {HistoryState} from '../types/store.ts'
 import * as Y from 'yjs';
 
 export const UndoRedo = {
-    debugMode: 0,
     maxHistory: 50,
     userHistories: new Map<string, { history: HistoryState[], position: number }>(),
     currentUserId: null as string | null,
@@ -18,16 +17,6 @@ export const UndoRedo = {
             this.userHistories.set(userId, { history: [], position: 0 });
         }
     },
-
-    reset(userId: string, item: HistoryState): void {
-        if (!this.userHistories.has(userId)) {
-            this.userHistories.set(userId, { history: [], position: 0 });
-        }
-        const userHistory = this.userHistories.get(userId)!;
-        userHistory.history = [structuredClone(item)];
-        userHistory.position = 0;
-    },
-
     canUndo(userId?: string): boolean {
         const targetUserId = userId || this.currentUserId;
         if (!targetUserId) return false;
@@ -51,7 +40,6 @@ export const UndoRedo = {
         const userHistory = this.userHistories.get(targetUserId);
         if (userHistory && userHistory.position > 0) {
             userHistory.position--;
-            this.debug('undo', targetUserId);
             const state = userHistory.history[userHistory.position];
 
             if (this.yDoc && state) {
@@ -68,7 +56,6 @@ export const UndoRedo = {
         const userHistory = this.userHistories.get(targetUserId);
         if (userHistory && userHistory.position < userHistory.history.length - 1) {
             userHistory.position++;
-            this.debug('redo', targetUserId);
             const state = userHistory.history[userHistory.position];
 
             if (this.yDoc && state) {
@@ -133,24 +120,5 @@ export const UndoRedo = {
             .concat(structuredClone(item))
             .slice(-this.maxHistory);
         userHistory.position = userHistory.history.length - 1;
-        this.debug('addHistory', userId);
     },
-
-    debug(cmd: string, userId?: string): void {
-        if (!this.debugMode) return;
-        const targetUserId = userId || this.currentUserId;
-        if (!targetUserId) return;
-
-        const userHistory = this.userHistories.get(targetUserId);
-        if (!userHistory) return;
-
-        const {history, position} = userHistory;
-        const ret = ['undo', 'redo'].indexOf(cmd) !== -1 ?
-            '=> ' + history[position] : '';
-        const canUndo = this.canUndo(targetUserId);
-        const canRedo = this.canRedo(targetUserId);
-        console.log(
-            `User ${targetUserId}:`, cmd, {history, position, canUndo, canRedo}, ret
-        );
-    }
 };

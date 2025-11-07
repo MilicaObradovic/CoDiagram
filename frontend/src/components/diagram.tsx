@@ -1,7 +1,7 @@
 import type {ShapeType} from "../types/diagram.ts";
 import ShapeMenu from "./shapeMenu.tsx";
 import DiagramCanvas from "./diagramCanvas.tsx";
-import {useCallback, useEffect, useState} from "react";
+import { useEffect, useState} from "react";
 import {type Edge, ReactFlowProvider} from "reactflow";
 import {useParams} from "react-router-dom";
 import {authApi} from "../services/authApi.ts";
@@ -16,12 +16,7 @@ function Diagram() {
     const {id} = useParams();
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(true);
-    const {
-        nodes,
-        edges,
-        setLoadedNodesAndEdges,
-        initializeYjs
-    } = useStore();
+    const {initializeYjs, addUserHistory} = useStore();
     const [yDoc, setYDoc] = useState<Y.Doc | null>(null);
     const [provider, setProvider] = useState<WebsocketProvider | null>(null);
 
@@ -74,7 +69,11 @@ function Diagram() {
             diagramData.edges.forEach((edge: Edge) => {
                 yEdges.set(edge.id, edge);
             });
-            setLoadedNodesAndEdges(diagramData.nodes, diagramData.edges);
+            // addUserHistory({
+            //     nodes: diagramData.nodes,
+            //     edges: diagramData.edges,
+            //     type: 'loaded'
+            // });
 
         } catch (error) {
             console.error('Error loading diagram:', error);
@@ -83,27 +82,6 @@ function Diagram() {
             setIsLoading(false);
         }
     };
-    const useDebouncedSave = (diagramId: string | undefined, nodes: Node[], edges: Edge[], delay: number = 3000) => {
-        const saveDiagram = useCallback(async () => {
-            try {
-                const token = sessionStorage.getItem('token');
-                if (!token) return;
-
-                await authApi.updateDiagram(diagramId, {nodes, edges}, token);
-                console.log('Diagram auto-saved');
-            } catch (error) {
-                console.error('Auto-save failed:', error);
-            }
-        }, [diagramId, nodes, edges]);
-
-        useEffect(() => {
-            if (!diagramId || nodes.length === 0) return;
-
-            const timer = setTimeout(saveDiagram, delay);
-            return () => clearTimeout(timer);
-        }, [saveDiagram, delay, diagramId, nodes.length]);
-    };
-    useDebouncedSave(id, nodes, edges, 3000);
 
     const handleShapeSelect = (shapeType: ShapeType) => {
         setSelectedShape(shapeType);

@@ -1,31 +1,19 @@
-import type {Edge, OnEdgesChange} from "reactflow";
-import type {OnConnect, Node, OnNodesChange} from "@xyflow/react";
-import type {EdgeType, LineStyle} from "./diagram.ts";
+import type {Edge} from "reactflow";
+import type { Node} from "@xyflow/react";
 import * as Y from "yjs";
 
-export type StoreState = {
-    nodes: Node[];
-    edges: Edge[];
-    yDoc: Y.Doc;
+export interface StoreState {
     currentUserId: string | null;
-    setCurrentUser: (userId: string) => void;
     isInitialized: boolean;
-    initializeYjs: (doc: Y.Doc)=>void;
-    createNode: (node: Node) => void;
-    setLoadedNodesAndEdges: (nodes: Node[], edges: Edge[])=>void;
-    setNodes: (nodes: Node[], origin:string) => void;
-    setEdges: (edges: Edge[], origin:string) => void;
-    nextNodeId: number,
-    onNodesChange: OnNodesChange;
-    onEdgesChange: OnEdgesChange;
-    onConnect: OnConnect;
-    updateNodeLabel: (nodeId: string, label: string, origin?: string) => void;
+    setCurrentUser: (userId: string) => void;
+    initializeYjs: (doc: Y.Doc) => void;
     undo: () => void;
     redo: () => void;
     canUndo: () => boolean;
     canRedo: () => boolean;
-    onEdgeClick: (edgeId: string, edgeType: EdgeType, lineStyle?: LineStyle, origin?: string) => void;
-};
+    addUserHistory: (state: HistoryState) => void;
+}
+
 
 export interface HistoryState {
     nodes: Node[];

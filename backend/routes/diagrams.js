@@ -155,8 +155,8 @@ router.put('/:id', auth, async (req, res) => {
           y: node.position?.y || 0
         },
         data: node.data || {},
-        width: node.measured.width || 200,
-        height: node.measured.height || 100,
+        width: node.width || 200,
+        height: node.height || 100,
         selected: node.selected || false,
         dragging: node.dragging || false
       }));

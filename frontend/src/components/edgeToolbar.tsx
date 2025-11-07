@@ -5,7 +5,7 @@ interface EdgeToolbarProps {
     selectedEdgeType: EdgeType;
     onEdgeTypeSelect: (edgeType: EdgeType) => void;
     selectedEdgeId?: string;
-    onUpdateEdge?: (edgeId: string, edgeType: EdgeType, lineStyle: LineStyle) => void;
+    onUpdateEdge?: (edgeId: string, edgeType: EdgeType, lineStyle: LineStyle, origin:string) => void;
     selectedLineStyle?: LineStyle;
     onLineStyleSelect: (lineStyle: LineStyle) => void;
 }
@@ -80,7 +80,7 @@ const EdgeToolbar: React.FC<EdgeToolbarProps> = ({
     const handleEdgeTypeSelect = (edgeType: EdgeType) => {
         onEdgeTypeSelect(edgeType);
         if (selectedEdgeId && onUpdateEdge) {
-            onUpdateEdge(selectedEdgeId, edgeType, selectedLineStyle);
+            onUpdateEdge(selectedEdgeId, edgeType, selectedLineStyle, "user");
         }
         setIsEdgeTypeOpen(false);
     };
@@ -88,7 +88,7 @@ const EdgeToolbar: React.FC<EdgeToolbarProps> = ({
     const handleLineStyleSelect = (lineStyle: LineStyle) => {
         onLineStyleSelect(lineStyle);
         if (selectedEdgeId && onUpdateEdge) {
-            onUpdateEdge(selectedEdgeId, selectedEdgeType, lineStyle);
+            onUpdateEdge(selectedEdgeId, selectedEdgeType, lineStyle, "user");
         }
         setIsLineStyleOpen(false);
     };

@@ -1,8 +1,13 @@
-import type {CustomNodeData} from "../types/diagram.ts";
 import React, {memo, useCallback, useState} from "react";
-import {Handle, NodeResizer, Position} from "@xyflow/react";
-import {useStore} from '../store';
+import {Handle, type NodeProps, NodeResizer, Position} from "@xyflow/react";
 import ShapeRenderer from "./renderShape.tsx";
+
+interface CustomNodeDivProps extends NodeProps {
+    editingNodeId: string | null;
+    setEditingNodeId: (id: string | null) => void;
+    editText: string;
+    setEditText: (text: string) => void;
+}
 
 const CustomNodeDiv = ({
                            data,
@@ -10,26 +15,23 @@ const CustomNodeDiv = ({
                            editingNodeId,
                            setEditingNodeId,
                            editText,
-                           setEditText, selected
-                       }: {
-    data: CustomNodeData;
-    id: string;
-    editingNodeId: string | null;
-    setEditingNodeId: (id: string | null) => void;
-    editText: string;
-    setEditText: (text: string) => void;
-    selected: boolean;
-}) => {
+                           setEditText,
+                           selected,
+                           width,
+                           height
+                       }: CustomNodeDivProps) => {
     const [isHovered, setIsHovered] = useState(false);
-    const nodes = useStore(state => state.nodes);
-    const currentNode = nodes.find(node => node.id === id);
-    const currentLabel = (currentNode?.data?.label || data.label) as React.ReactNode;
-    const shapeType = data.shapeType || 'rectangle';
-    const width = currentNode?.measured?.width || 100;
-    const height = currentNode?.measured?.height || 60;
+
+    // Use the props that React Flow provides
+    const currentLabel = data?.label as React.ReactNode;
+    const shapeType = data?.shapeType || 'rectangle';
+
+    // Use width/height from React Flow props with fallbacks
+    // const nodeWidth = width || 100;
+    // const nodeHeight = height || 60;
 
     const handleSave = useCallback(() => {
-        useStore.getState().updateNodeLabel(id, editText);
+        // useStore.getState().updateNodeLabel(id, editText);
         setEditingNodeId(null);
     }, [id, editText, setEditingNodeId, setEditText]);
 

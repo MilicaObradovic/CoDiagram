@@ -1,13 +1,19 @@
-import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
+    applyEdgeChanges,
+    applyNodeChanges,
     Background,
+    type Connection,
     ConnectionLineType,
     ConnectionMode,
     ControlButton,
     Controls,
+    type EdgeChange,
     MiniMap,
     type Node,
-    type NodeMouseHandler, Panel,
+    type NodeChange,
+    type NodeMouseHandler,
+    Panel,
     ReactFlow,
     type ReactFlowInstance
 } from '@xyflow/react';
@@ -15,8 +21,10 @@ import 'reactflow/dist/style.css';
 import {
     type CustomNodeData,
     type EdgeType,
-    EdgeTypes, getShapeDimensions,
-    type LineStyle, LineStyles,
+    EdgeTypes,
+    getShapeDimensions,
+    type LineStyle,
+    LineStyles,
     type ShapeType
 } from "../types/diagram.ts";
 import CustomNodeDiv from './customNodeDiv.tsx'
@@ -28,40 +36,29 @@ import EdgeToolbar from "./edgeToolbar.tsx";
 import {WebsocketProvider} from "y-websocket";
 import * as Y from 'yjs';
 import {CursorOverlay} from "./cursorOverlay.tsx";
-
+import type {Edge} from "reactflow";
+import {authApi} from "../services/authApi.ts";
+import {useParams} from "react-router-dom";
 
 interface DiagramCanvasProps {
     selectedShape: ShapeType;
     onShapeCreated: () => void;
     yDoc: Y.Doc | null;
-    provider:WebsocketProvider | null;
+    provider: WebsocketProvider | null;
 }
 
 const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCreated, yDoc, provider}) => {
     // Zustand store for undo/redo and state management
-    const {
-        nodes,
-        edges,
-        onNodesChange,
-        onEdgesChange,
-        onConnect,
-        undo,
-        redo,
-        canUndo,
-        canRedo,
-        onEdgeClick,
-        setNodes,
-        setEdges,
-        createNode,
-        setCurrentUser
-    } = useStore();
+    const {undo, redo, canUndo, canRedo, setCurrentUser, addUserHistory} = useStore();
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
     const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
     const [editText, setEditText] = useState('');
     const [selectedEdgeType, setSelectedEdgeType] = useState<EdgeType>(EdgeTypes.STEP);
     const [selectedEdgeId, setSelectedEdgeId] = useState<string | undefined>(undefined);
     const [selectedLineStyle, setSelectedLineStyle] = useState<LineStyle>(LineStyles.SOLID);
-    const shapeCreationTimeout = useRef<NodeJS.Timeout>();
+    const [nodes, setNodes] = useState<Node[]>([]);
+    const [edges, setEdges] = useState<Edge[]>([]);
+    const {id} = useParams();
 
     useEffect(() => {
         if (provider) {
@@ -70,159 +67,34 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
         }
     }, [provider]);
 
-    // Yjs -> React Flow synchronization
     useEffect(() => {
         if (!yDoc) return;
 
         const yNodes = yDoc.getMap('nodes');
         const yEdges = yDoc.getMap('edges');
 
-        // Set up observers for Yjs -> React Flow sync
-        yNodes.observe(() => {
-            const yjsNodes = Array.from(yNodes.values());
-            setNodes(yjsNodes, "yjs");
-        });
+        // Initial load
+        setNodes(Array.from(yNodes.values()));
+        setEdges(Array.from(yEdges.values()));
 
-        yEdges.observe(() => {
-            const yjsEdges = Array.from(yEdges.values());
-            setEdges(yjsEdges, "yjs");
-        });
+        // Listen for changes
+        const nodesObserver = () => {
+            setNodes(Array.from(yNodes.values()));
+        };
+
+        const edgesObserver = () => {
+            setEdges(Array.from(yEdges.values()));
+        };
+
+        yNodes.observe(nodesObserver);
+        yEdges.observe(edgesObserver);
 
         return () => {
-            // Cleanup observers if needed
+            yNodes.unobserve(nodesObserver);
+            yEdges.unobserve(edgesObserver);
         };
-    }, [yDoc, setNodes, setEdges]);
+    }, [yDoc]);
 
-    useEffect(() => {
-        if (!yDoc) return;
-
-        const yNodes = yDoc.getMap('nodes');
-        const yEdges = yDoc.getMap('edges');
-        const originalOnNodesChange = useStore.getState().onNodesChange;
-        const originalOnEdgesChange = useStore.getState().onEdgesChange;
-        const originalOnConnect = useStore.getState().onConnect;
-
-        useStore.setState({
-            onNodesChange: (changes) => {
-                changes.forEach(change => {
-                    if (change.type === 'add') {
-                        console.log("ADDDDD")
-                        yNodes.set(change.item.id, change.item);
-                    } else if (change.type === 'remove') {
-                        yNodes.delete(change.id);
-                    } else if (change.type === 'position') {
-                        // Skip position changes during resize
-                        if (change.dragging !== false) { // Only sync when not dragging
-                            const existingNode = yNodes.get(change.id);
-                            if (existingNode) {
-                                const updatedNode = {
-                                    ...existingNode,
-                                    position: change.position
-                                };
-                                yNodes.set(change.id, updatedNode);
-                            }
-                        }
-                    } else if (change.type === 'dimensions') {
-                        // Only sync when resize ends or use debounce for final value
-                        if (change.resizing === false) {
-                            // Sync final resize value
-                            const existingNode = yNodes.get(change.id);
-                            if (existingNode && change.dimensions) {
-                                const updatedNode = {
-                                    ...existingNode,
-                                    width: Math.max(20, change.dimensions.width),
-                                    height: Math.max(20, change.dimensions.height),
-                                    position: change.position ? change.position : existingNode.position
-                                };
-                                yNodes.set(change.id, updatedNode);
-                            }
-                        }
-                    } else if (change.type === 'select') {
-                        const existingNode = yNodes.get(change.id);
-                        if (existingNode) {
-                            const updatedNode = {
-                                ...existingNode,
-                                selected: change.selected
-                            };
-                            yNodes.set(change.id, updatedNode);
-                        }
-                    }
-                });
-
-                originalOnNodesChange(changes);
-            },
-            onEdgesChange: (changes) => {
-                changes.forEach(change => {
-                    console.log('🔵 Processing edge change:', change.type, change.id);
-
-                    if (change.type === 'add') {
-                        yEdges.set(change.item.id, change.item);
-                        console.log('Added edge to Y.js:', change.item.id);
-                    } else if (change.type === 'remove') {
-                        yEdges.delete(change.id);
-                        console.log('Removed edge from Y.js:', change.id);
-                    } else if (change.type === 'select') {
-                        console.log('🔵 Edge selection change:', change.id, change.selected);
-                        const existingEdge = yEdges.get(change.id);
-                        if (existingEdge) {
-                            const updatedEdge = {
-                                ...existingEdge,
-                                selected: change.selected
-                            };
-                            yEdges.set(change.id, updatedEdge);
-                            console.log('Updated edge selection in Y.js');
-                        }
-                    }
-                });
-
-                originalOnEdgesChange(changes);
-            },
-
-            onConnect: (connection) => {
-                const edgesBefore = useStore.getState().edges;
-                originalOnConnect(connection);
-
-                // wait for state update, then find new edge
-                setTimeout(() => {
-                    const edgesAfter = useStore.getState().edges;
-                    // console.log('Edges after connection:', edgesAfter.length);
-
-                    // find edge that is added (diff btw before/after)
-                    const newEdge = edgesAfter.find(edgeAfter =>
-                        !edgesBefore.some(edgeBefore => edgeBefore.id === edgeAfter.id)
-                    );
-
-                    if (newEdge) {
-                        // console.log('Found NEW edge:', newEdge);
-                        const updatedEdge = {
-                            ...newEdge,
-                            type: selectedEdgeType,
-                            data: {
-                                ...newEdge.data,
-                                lineStyle: selectedLineStyle
-                            }
-                        };
-
-                        yEdges.set(updatedEdge.id, updatedEdge);
-                        // console.log('Updated edge in Y.js:', updatedEdge.id);
-
-
-                    } else {
-                        console.error('Could not find newly created edge');
-                        // console.log('Before:', edgesBefore.map(e => e.id));
-                        // console.log('After:', edgesAfter.map(e => e.id));
-                    }
-                }, 10);
-            }
-        });
-        return () => {
-            useStore.setState({
-                onNodesChange: originalOnNodesChange,
-                onEdgesChange: originalOnEdgesChange,
-                onConnect: originalOnConnect
-            });
-        };
-    }, [yDoc, selectedEdgeType, selectedLineStyle]);
     // Cursor management
     useEffect(() => {
         if (!provider || !yDoc) return;
@@ -269,9 +141,169 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
         };
     }, [provider, yDoc]);
 
-    const handleEdgeClick = useCallback((edgeId: string, edgeType: EdgeType, lineStyle?: LineStyle) => {
-        // update Y.js
-        if (yDoc) {
+    const onNodesChange = useCallback((changes: NodeChange[]) => {
+        if (!yDoc) return;
+        yDoc.transact(() => {
+            const yNodes = yDoc.getMap('nodes');
+
+            changes.forEach(change => {
+                if (change.type === 'position') {
+                    if (change.dragging !== false) {
+                        const existingNode = yNodes.get(change.id);
+                        if (existingNode) {
+                            const updatedNode = {
+                                ...existingNode,
+                                position: change.position
+                            };
+                            yNodes.set(change.id, updatedNode);
+                        }
+                    }
+                } else if (change.type === 'dimensions') {
+                    if (change.resizing === false) {
+                        // Sync final resize value
+                        const existingNode = yNodes.get(change.id);
+                        if (existingNode && change.dimensions) {
+                            const updatedNode = {
+                                ...existingNode,
+                                width: Math.max(20, change.dimensions.width),
+                                height: Math.max(20, change.dimensions.height),
+                                position: change.position ? change.position : existingNode.position
+                            };
+                            yNodes.set(change.id, updatedNode);
+                        }
+                    }
+                } else if (change.type === 'remove') {
+                    yNodes.delete(change.id);
+                } else if (change.type === 'select') {
+                    const existingNode = yNodes.get(change.id);
+                    if (existingNode) {
+                        const updatedNode = {
+                            ...existingNode,
+                            selected: change.selected
+                        };
+                        yNodes.set(change.id, updatedNode);
+                    }
+                }
+            });
+        });
+        const shouldSaveHistory = changes.some(change =>
+            change.type === 'remove' ||
+            (change.type === 'position' && change.dragging === false) ||
+            (change.type === 'dimensions' && change.resizing === false)
+        );
+
+        const updatedNodes = applyNodeChanges(changes, nodes);
+        setNodes(updatedNodes);
+        if (shouldSaveHistory) {
+            addUserHistory({
+                nodes: Array.from(yDoc.getMap('nodes').values()),
+                edges: Array.from(yDoc.getMap('edges').values()),
+                type: 'user'
+            });
+        }
+    }, [yDoc, nodes, addUserHistory]);
+
+    const onEdgesChange = useCallback((changes: EdgeChange[]) => {
+        if (!yDoc) return;
+
+        let shouldSaveHistory = false;
+        const updatedEdges = applyEdgeChanges(changes, edges);
+        setEdges(updatedEdges); // Update your local state
+
+        yDoc.transact(() => {
+            const yEdges = yDoc.getMap('edges');
+
+            changes.forEach(change => {
+                console.log('Processing edge change:', change.type, change.id);
+
+                if (change.type === 'add') {
+                    // Add user metadata to new edge
+                    const edgeWithMetadata = {
+                        ...change.item,
+                        data: {
+                            ...change.item.data,
+                            createdBy: provider?.awareness.clientID.toString(),
+                            lastModifiedBy: provider?.awareness.clientID.toString(),
+                            createdAt: Date.now(),
+                            lineStyle: selectedLineStyle
+                        },
+                        type: selectedEdgeType
+                    };
+
+                    yEdges.set(edgeWithMetadata.id, edgeWithMetadata);
+                    shouldSaveHistory = true;
+
+                } else if (change.type === 'remove') {
+                    yEdges.delete(change.id);
+                    shouldSaveHistory = true;
+
+                } else if (change.type === 'select') {
+                    const existingEdge = yEdges.get(change.id);
+                    if (existingEdge) {
+                        const updatedEdge = {
+                            ...existingEdge,
+                            selected: change.selected
+                        };
+                        yEdges.set(change.id, updatedEdge);
+                    }
+                }
+            });
+        });
+
+        // Save to undo/redo history for significant changes
+        if (shouldSaveHistory) {
+            addUserHistory({
+                nodes: Array.from(yDoc.getMap('nodes').values()),
+                edges: Array.from(yDoc.getMap('edges').values()),
+                type: 'user'
+            });
+        }
+
+    }, [yDoc, provider, selectedEdgeType, selectedLineStyle, addUserHistory]);
+
+    const onConnect = useCallback((connection: Connection) => {
+        if (!yDoc) return;
+
+        yDoc.transact(() => {
+            const yEdges = yDoc.getMap('edges');
+
+            // Generate unique edge ID
+            const edgeId = `edge-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+
+            const newEdge: Edge = {
+                id: edgeId,
+                source: connection.source,
+                target: connection.target,
+                sourceHandle: connection.sourceHandle,
+                targetHandle: connection.targetHandle,
+                type: selectedEdgeType,
+                data: {
+                    createdBy: provider?.awareness.clientID.toString(),
+                    lastModifiedBy: provider?.awareness.clientID.toString(),
+                    createdAt: Date.now(),
+                    lineStyle: selectedLineStyle
+                }
+            };
+
+            console.log('Creating new edge:', newEdge.id);
+            yEdges.set(newEdge.id, newEdge);
+
+            // Save to undo/redo history
+            addUserHistory({
+                nodes: Array.from(yDoc.getMap('nodes').values()),
+                edges: Array.from(yEdges.values()),
+                type: 'user'
+            });
+        });
+
+    }, [yDoc, provider, selectedEdgeType, selectedLineStyle, addUserHistory]);
+
+    const handleEdgeClick = useCallback((edgeId: string, edgeType: EdgeType, lineStyle?: LineStyle, origin: 'user' | 'yjs' | 'loaded' | 'undo-redo' = 'user') => {
+        if (!yDoc) return;
+
+        const userId = provider?.awareness.clientID.toString();
+
+        yDoc.transact(() => {
             const yEdges = yDoc.getMap('edges');
             const existingEdge = yEdges.get(edgeId);
 
@@ -279,17 +311,39 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
                 const updatedEdge = {
                     ...existingEdge,
                     type: edgeType,
-                    data: {
-                        ...existingEdge.data,
-                        ...(lineStyle && {lineStyle})
-                    }
+                    // Update last modified info for user actions
+                    ...(origin === 'user' && userId && {
+                        data: {
+                            ...existingEdge.data,
+                            lastModifiedBy: userId,
+                            lastModifiedAt: Date.now(),
+                            ...(lineStyle && {lineStyle})
+                        }
+                    })
                 };
+
+                // Handle lineStyle separately for non-user origins
+                if (lineStyle && (origin !== 'user' || !userId)) {
+                    updatedEdge.data = {
+                        ...updatedEdge.data,
+                        lineStyle: lineStyle
+                    };
+                }
+
                 yEdges.set(edgeId, updatedEdge);
-                console.log('Updated edge in Y.js:', edgeId);
+                console.log('Updated edge style in Y.js:', edgeId, edgeType, lineStyle);
             }
+        });
+
+        // Save to user's history for user actions
+        if (origin === 'user' && userId) {
+            addUserHistory({
+                nodes: Array.from(yDoc.getMap('nodes').values()),
+                edges: Array.from(yDoc.getMap('edges').values()),
+                type: origin
+            });
         }
-        onEdgeClick(edgeId, edgeType, lineStyle);
-    }, [yDoc, onEdgeClick]);
+    }, [yDoc, provider, addUserHistory]);
 
     const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
         const ctrl = event.ctrlKey ? 'Control-' : '';
@@ -320,6 +374,8 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
             data: {
                 label: `${shapeType.charAt(0).toUpperCase() + shapeType.slice(1)}`,
                 shapeType: shapeType,
+                createdBy: provider?.awareness.clientID.toString(),
+                createdAt: Date.now()
             },
             width: dimensions.width,
             height: dimensions.height,
@@ -328,8 +384,11 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
         // add to Yjs
         const yNodes = yDoc.getMap('nodes');
         yNodes.set(newNode.id, newNode);
-        // createNode(newNode);
-        //FIX 
+        addUserHistory({
+            nodes: Array.from(yNodes.values()),
+            edges: Array.from(yDoc.getMap('edges').values()),
+            type: 'user'
+        });
         onShapeCreated();
     }, [reactFlowInstance, yDoc, onShapeCreated]);
 
@@ -346,7 +405,6 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
         setEditText(nodeData?.label || '');
     }, [editingNodeId]);
 
-    // Create CustomNode with all necessary props
     const CustomNodeWithProps = useCallback((props: any) => (
         <CustomNodeDiv
             {...props}
@@ -355,12 +413,14 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
             editText={editText}
             setEditText={setEditText}
             selected={props.selected}
+            currentNode={nodes.find(node => node.id === props.id)}
         />
     ), [editingNodeId, editText]);
 
     const nodeTypes = useMemo(() => ({
         default: CustomNodeWithProps,
     }), [CustomNodeWithProps]);
+
     const edgeTypes = useMemo(() => ({
         [EdgeTypes.STEP]: CustomEdge,
         [EdgeTypes.SMOOTHSTEP]: CustomEdge,
@@ -368,6 +428,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
         [EdgeTypes.BEZIER]: CustomEdge,
         default: CustomEdge,
     }), []);
+
     const getConnectionLineType = useCallback((edgeType: EdgeType) => {
         switch (edgeType) {
             case EdgeTypes.STEP:
@@ -382,6 +443,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
                 return ConnectionLineType.Step;
         }
     }, []);
+
     const getConnectionLineStyle = useCallback((lineStyle: LineStyle) => {
         const baseStyle = {
             stroke: '#000000',
@@ -412,7 +474,10 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
             height: 30,
         },
     }), [selectedEdgeType, selectedLineStyle]);
-    const onInit = (reactFlowInstance: { setViewport: (arg0: { x: number; y: number; zoom: number; }, arg1: { duration: number; }) => void; }) => {
+
+    const onInit = (reactFlowInstance: {
+        setViewport: (arg0: { x: number; y: number; zoom: number; }, arg1: { duration: number; }) => void;
+    }) => {
         // Calculate center point of your translateExtent
         const translateExtent = [[-5000, -5000], [3000, 3000]];
         const centerX = (translateExtent[0][0] + translateExtent[1][0]) / 2;
@@ -423,8 +488,31 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
             x: -centerX,
             y: -centerY,
             zoom: 1
-        }, { duration: 0 });
+        }, {duration: 0});
     };
+
+    const useDebouncedSave = (diagramId: string | undefined, nodes: Node[], edges: Edge[], delay: number = 3000) => {
+        const saveDiagram = useCallback(async () => {
+            try {
+                const token = sessionStorage.getItem('token');
+                if (!token) return;
+
+                await authApi.updateDiagram(diagramId, {nodes, edges}, token);
+                console.log('Diagram auto-saved');
+            } catch (error) {
+                console.error('Auto-save failed:', error);
+            }
+        }, [diagramId, nodes, edges]);
+
+        useEffect(() => {
+            if (!diagramId || nodes.length === 0) return;
+
+            const timer = setTimeout(saveDiagram, delay);
+            return () => clearTimeout(timer);
+        }, [saveDiagram, delay, diagramId, nodes.length]);
+    };
+    useDebouncedSave(id, nodes, edges, 3000);
+
     return (
         <div style={{width: '100%', height: '100%'}} className="flex relative">
             <div className="flex-1 relative" id="diagram-container">
