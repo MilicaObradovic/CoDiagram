@@ -1,6 +1,7 @@
 import React, {memo, useCallback, useState} from "react";
 import {Handle, type NodeProps, NodeResizer, Position} from "@xyflow/react";
 import ShapeRenderer from "./renderShape.tsx";
+import {useStore} from "../store";
 
 interface CustomNodeDivProps extends NodeProps {
     editingNodeId: string | null;
@@ -21,17 +22,13 @@ const CustomNodeDiv = ({
                            height
                        }: CustomNodeDivProps) => {
     const [isHovered, setIsHovered] = useState(false);
+    const {updateNodeLabel} = useStore();
 
     // Use the props that React Flow provides
     const currentLabel = data?.label as React.ReactNode;
     const shapeType = data?.shapeType || 'rectangle';
-
-    // Use width/height from React Flow props with fallbacks
-    // const nodeWidth = width || 100;
-    // const nodeHeight = height || 60;
-
     const handleSave = useCallback(() => {
-        // useStore.getState().updateNodeLabel(id, editText);
+        updateNodeLabel(id, editText, 'user');
         setEditingNodeId(null);
     }, [id, editText, setEditingNodeId, setEditText]);
 

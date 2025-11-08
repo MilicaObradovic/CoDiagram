@@ -12,6 +12,7 @@ export interface StoreState {
     canUndo: () => boolean;
     canRedo: () => boolean;
     addUserHistory: (state: HistoryState) => void;
+    updateNodeLabel: (nodeId: string, label: string, origin: string) => void;
 }
 
 

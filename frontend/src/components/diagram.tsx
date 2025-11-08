@@ -69,11 +69,11 @@ function Diagram() {
             diagramData.edges.forEach((edge: Edge) => {
                 yEdges.set(edge.id, edge);
             });
-            // addUserHistory({
-            //     nodes: diagramData.nodes,
-            //     edges: diagramData.edges,
-            //     type: 'loaded'
-            // });
+            addUserHistory({
+                nodes: diagramData.nodes,
+                edges: diagramData.edges,
+                type: 'loaded'
+            });
 
         } catch (error) {
             console.error('Error loading diagram:', error);

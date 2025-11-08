@@ -83,6 +83,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
         };
 
         const edgesObserver = () => {
+            console.log("EDGE SYNC")
             setEdges(Array.from(yEdges.values()));
         };
 
@@ -95,6 +96,9 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
         };
     }, [yDoc]);
 
+    useEffect(() => {
+        console.log('🟢 EDGES STATE ACTUALLY UPDATED:', edges.map(e => e.id));
+    }, [edges]);
     // Cursor management
     useEffect(() => {
         if (!provider || !yDoc) return;
@@ -174,15 +178,6 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
                     }
                 } else if (change.type === 'remove') {
                     yNodes.delete(change.id);
-                } else if (change.type === 'select') {
-                    const existingNode = yNodes.get(change.id);
-                    if (existingNode) {
-                        const updatedNode = {
-                            ...existingNode,
-                            selected: change.selected
-                        };
-                        yNodes.set(change.id, updatedNode);
-                    }
                 }
             });
         });
@@ -207,7 +202,10 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
         if (!yDoc) return;
 
         let shouldSaveHistory = false;
-        const updatedEdges = applyEdgeChanges(changes, edges);
+
+        const yEdgesMap = yDoc.getMap('edges');
+        const currentEdges = Array.from(yEdgesMap.values());
+        const updatedEdges = applyEdgeChanges(changes, currentEdges);
         setEdges(updatedEdges); // Update your local state
 
         yDoc.transact(() => {
@@ -236,16 +234,6 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
                 } else if (change.type === 'remove') {
                     yEdges.delete(change.id);
                     shouldSaveHistory = true;
-
-                } else if (change.type === 'select') {
-                    const existingEdge = yEdges.get(change.id);
-                    if (existingEdge) {
-                        const updatedEdge = {
-                            ...existingEdge,
-                            selected: change.selected
-                        };
-                        yEdges.set(change.id, updatedEdge);
-                    }
                 }
             });
         });

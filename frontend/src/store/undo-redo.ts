@@ -22,7 +22,7 @@ export const UndoRedo = {
         if (!targetUserId) return false;
 
         const userHistory = this.userHistories.get(targetUserId);
-        return userHistory ? userHistory.position > 0 && userHistory.history[userHistory.position - 1].type !== "loaded" : false;
+        return userHistory ? userHistory.position > 0 && userHistory.history[userHistory.position].type !== "loaded" : false;
     },
 
     canRedo(userId?: string): boolean {
