@@ -1,31 +1,39 @@
-import {useReactFlow, getNodesBounds, getViewportForBounds, ControlButton} from '@xyflow/react';
+import {useReactFlow, ControlButton} from '@xyflow/react';
 import {toPng} from 'html-to-image';
+import {getRectOfNodes, getTransformForBounds} from "reactflow";
 
 function downloadImage(dataUrl: string) {
     const a = document.createElement('a');
 
-    a.setAttribute('download', 'reactflow.png');
+    a.setAttribute('download', 'CoDiagram.png');
     a.setAttribute('href', dataUrl);
     a.click();
 }
 
-const imageWidth = 1024;
-const imageHeight = 768;
+const imageWidth = 3840;
+const imageHeight = 2160;
 
 function DownloadButton() {
-    const {getNodes} = useReactFlow();
+    const { getNodes } = useReactFlow();
     const onClick = () => {
-        // calculate a transform for the nodes so that all nodes are visible
-        const nodesBounds = getNodesBounds(getNodes());
-        const viewport = getViewportForBounds(nodesBounds, imageWidth, imageHeight, 0.5, 2, 0);
+        // transform done so that all nodes are visible
+        const nodesBounds = getRectOfNodes(getNodes());
+        const transform = getTransformForBounds(
+            nodesBounds,
+            imageWidth,
+            imageHeight
+        );
 
-        toPng(document.querySelector('.react-flow__viewport') as HTMLElement, {
-            backgroundColor: 'white',
+        toPng(document.querySelector(".react-flow__viewport") as HTMLElement, {
+            backgroundColor: "white",
             width: imageWidth,
             height: imageHeight,
+            pixelRatio: 2,
             style: {
-                transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
-            },
+                width: imageWidth,
+                height: imageHeight,
+                transform: `translate(${transform[0]}px, ${transform[1]}px) scale(${transform[2]})`
+            }
         }).then(downloadImage);
     };
 

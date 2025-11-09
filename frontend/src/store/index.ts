@@ -85,7 +85,7 @@ const useStore = create<StoreState>((set, get) => ({
             };
 
             yNodes.set(nodeId, updatedNode);
-            console.log(`✅ Updated node label: ${nodeId} -> "${label}"`);
+            console.log(`Updated node label: ${nodeId} -> "${label}"`);
         });
 
         // Save to history for user actions
