@@ -1,10 +1,10 @@
 import type {ShapeType} from "../types/diagram.ts";
 import ShapeMenu from "./shapeMenu.tsx";
 import DiagramCanvas from "./diagramCanvas.tsx";
-import { useEffect, useState} from "react";
+import {useEffect, useState} from "react";
 import {type Edge, ReactFlowProvider} from "reactflow";
 import {useParams} from "react-router-dom";
-import {authApi} from "../services/authApi.ts";
+import {authApi} from "../services/service.ts";
 import {useStore} from "../store";
 import {UndoRedo} from "../store/undo-redo.ts";
 import {WebsocketProvider} from "y-websocket";
@@ -33,15 +33,14 @@ function Diagram() {
                 console.log('Not authenticated');
                 return;
             }
-
-            // 1. Initialize Yjs FIRST
+            // 1. Initialize Yjs
             console.log('Initializing Yjs...');
             const doc = new Y.Doc();
             UndoRedo.setYDoc(doc);
 
             const wsProvider = new WebsocketProvider(
                 'ws://localhost:1234/',
-                String(diagramId), // Use diagramId as room name
+                String(diagramId), // room name
                 doc
             );
 

@@ -5,7 +5,7 @@ interface EdgeToolbarProps {
     selectedEdgeType: EdgeType;
     onEdgeTypeSelect: (edgeType: EdgeType) => void;
     selectedEdgeId?: string;
-    onUpdateEdge?: (edgeId: string, edgeType: EdgeType, lineStyle: LineStyle, origin:string) => void;
+    onUpdateEdge?: (edgeId: string, edgeType: EdgeType, lineStyle: LineStyle, origin: string) => void;
     selectedLineStyle?: LineStyle;
     onLineStyleSelect: (lineStyle: LineStyle) => void;
 }

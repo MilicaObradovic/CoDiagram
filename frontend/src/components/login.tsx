@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import type {LoginFormData, LoginFormErrors} from '../types/auth';
 import {Link, useLocation, useNavigate} from 'react-router-dom';
-import {authApi} from "../services/authApi.ts";
+import {authApi} from "../services/service.ts";
 
 const Login: React.FC = () => {
     const [formData, setFormData] = useState<LoginFormData>({
@@ -108,7 +108,8 @@ const Login: React.FC = () => {
                     <h2 className="mt-6 text-3xl font-bold text-gray-900">Sign in to your account</h2>
                     <p className="mt-2 text-sm text-gray-600">
                         Or{' '}
-                        <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500 transition-colors">
+                        <Link to="/register"
+                              className="font-medium text-blue-600 hover:text-blue-500 transition-colors">
                             create a new account
                         </Link>
                     </p>
@@ -118,8 +119,10 @@ const Login: React.FC = () => {
                 {successMessage && (
                     <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                         <div className="flex items-center">
-                            <svg className="h-5 w-5 text-green-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            <svg className="h-5 w-5 text-green-400 mr-2" fill="none" viewBox="0 0 24 24"
+                                 stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
                             <p className="text-green-700 text-sm">{successMessage}</p>
                         </div>
@@ -130,8 +133,10 @@ const Login: React.FC = () => {
                 {apiError && (
                     <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                         <div className="flex items-center">
-                            <svg className="h-5 w-5 text-red-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            <svg className="h-5 w-5 text-red-400 mr-2" fill="none" viewBox="0 0 24 24"
+                                 stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
                             <p className="text-red-700 text-sm">{apiError}</p>
                         </div>

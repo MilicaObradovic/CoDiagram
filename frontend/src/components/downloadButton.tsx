@@ -14,7 +14,7 @@ const imageWidth = 3840;
 const imageHeight = 2160;
 
 function DownloadButton() {
-    const { getNodes } = useReactFlow();
+    const {getNodes} = useReactFlow();
     const onClick = () => {
         // transform done so that all nodes are visible
         const nodesBounds = getRectOfNodes(getNodes());

@@ -1,6 +1,6 @@
-import { create } from 'zustand';
+import {create} from 'zustand';
 import type {HistoryState, StoreState} from '../types/store.ts';
-import { UndoRedo } from './undo-redo';
+import {UndoRedo} from './undo-redo';
 import * as Y from 'yjs';
 
 const useStore = create<StoreState>((set, get) => ({
@@ -9,12 +9,12 @@ const useStore = create<StoreState>((set, get) => ({
 
     setCurrentUser: (userId: string) => {
         UndoRedo.setCurrentUser(userId);
-        set({ currentUserId: userId });
+        set({currentUserId: userId});
     },
 
     initializeYjs: (doc: Y.Doc) => {
         UndoRedo.setYDoc(doc);
-        set({ isInitialized: true });
+        set({isInitialized: true});
     },
 
     undo: () => {
@@ -47,7 +47,7 @@ const useStore = create<StoreState>((set, get) => ({
     },
 
     updateNodeLabel: (nodeId: string, label: string, origin: string) => {
-        const { currentUserId, isInitialized } = get();
+        const {currentUserId, isInitialized} = get();
 
         if (!isInitialized || !currentUserId) {
             console.warn('Cannot update node label: store not initialized or no user');
@@ -103,4 +103,4 @@ const useStore = create<StoreState>((set, get) => ({
     }
 }));
 
-export { useStore };
+export {useStore};

@@ -1,13 +1,13 @@
 import React, {useState, useCallback, useEffect} from 'react';
-import {authApi} from '../services/authApi';
+import {authApi} from '../services/service.ts';
 import type {UserSearchResult} from '../types/auth';
 
 interface CollaboratorSearchProps {
-    diagramId: string|undefined;
+    diagramId: string | undefined;
     currentCollaborators: UserSearchResult[];
     onClose: () => void;
     isOwner: boolean;
-    owner: UserSearchResult|undefined;
+    owner: UserSearchResult | undefined;
 }
 
 const CollaboratorSearch: React.FC<CollaboratorSearchProps> = ({
@@ -142,7 +142,8 @@ const CollaboratorSearch: React.FC<CollaboratorSearchProps> = ({
                 <h4 className="font-medium text-gray-900 text-sm">Diagram Owner</h4>
                 <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
                     <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
+                        <div
+                            className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
                             {owner?.name?.charAt(0)?.toUpperCase() || 'O'}
                         </div>
                         <div>

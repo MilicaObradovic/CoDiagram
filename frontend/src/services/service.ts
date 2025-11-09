@@ -3,7 +3,7 @@ import type {CreateDiagramData, DiagramResponse} from "../types/diagram.ts";
 
 const API_BASE_URL = 'http://localhost:5001/api';
 
-class AuthApi {
+class Service {
     private baseUrl: string;
 
     constructor() {
@@ -40,25 +40,17 @@ class AuthApi {
     async login(email: string, password: string): Promise<AuthResponse> {
         return this.request<AuthResponse>('/auth/login', {
             method: 'POST',
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({email, password}),
         });
     }
 
     async register(name: string, email: string, password: string, confirmPassword: string): Promise<AuthResponse> {
         return this.request<AuthResponse>('/auth/register', {
             method: 'POST',
-            body: JSON.stringify({ name, email, password, confirmPassword }),
+            body: JSON.stringify({name, email, password, confirmPassword}),
         });
     }
 
-    async getCurrentUser(token: string): Promise<{ user: any }> {
-        return this.request<{ user: any }>('/me', {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-        });
-    }
     async createDiagram(diagramData: CreateDiagramData, token: string): Promise<DiagramResponse> {
         return this.request<DiagramResponse>('/diagrams', {
             method: 'POST',
@@ -70,7 +62,7 @@ class AuthApi {
         });
     }
 
-    async getDiagrams( token: string): Promise<DiagramResponse[]> {
+    async getDiagrams(token: string): Promise<DiagramResponse[]> {
         return this.request<DiagramResponse[]>(`/diagrams`, {
             method: 'GET',
             headers: {
@@ -88,7 +80,7 @@ class AuthApi {
         });
     }
 
-    async updateDiagram(id: string|undefined, diagramData: Partial<CreateDiagramData>, token: string): Promise<DiagramResponse> {
+    async updateDiagram(id: string | undefined, diagramData: Partial<CreateDiagramData>, token: string): Promise<DiagramResponse> {
         return this.request<DiagramResponse>(`/diagrams/${id}`, {
             method: 'PUT',
             headers: {
@@ -107,6 +99,7 @@ class AuthApi {
             },
         });
     }
+
     async searchUsers(query: string, token: string, limit: number = 10): Promise<UserSearchResult[]> {
         return this.request<UserSearchResult[]>(`/users/search?q=${encodeURIComponent(query)}&limit=${limit}`, {
             method: 'GET',
@@ -123,7 +116,7 @@ class AuthApi {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ collaborators: collaboratorIds }),
+            body: JSON.stringify({collaborators: collaboratorIds}),
         });
     }
 
@@ -138,4 +131,4 @@ class AuthApi {
 
 }
 
-export const authApi = new AuthApi();
+export const authApi = new Service();

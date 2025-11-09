@@ -1,7 +1,7 @@
 import React, {useState} from 'react';
 import type {RegisterFormData, RegisterFormErrors} from '../types/auth';
 import {useNavigate} from 'react-router-dom';
-import {authApi} from "../services/authApi.ts";
+import {authApi} from "../services/service.ts";
 
 const Register: React.FC = () => {
     const [formData, setFormData] = useState<RegisterFormData>({
@@ -16,9 +16,7 @@ const Register: React.FC = () => {
     const [errors, setErrors] = useState<RegisterFormErrors>({});
     const [isLoading, setIsLoading] = useState(false);
     const [apiError, setApiError] = useState<string>('');
-    const [successMessage, setSuccessMessage] = useState<string>(''); // Add success state
-
-
+    const [, setSuccessMessage] = useState<string>(''); // Add success state
 
     const validateForm = (): boolean => {
         const newErrors: RegisterFormErrors = {};
@@ -73,7 +71,7 @@ const Register: React.FC = () => {
         setIsLoading(true);
 
         try {
-            const response = await authApi.register(formData.firstName+" "+formData.lastName, formData.email, formData.password, formData.confirmPassword);
+            const response = await authApi.register(formData.firstName + " " + formData.lastName, formData.email, formData.password, formData.confirmPassword);
 
             setSuccessMessage('Registration successful! Redirecting to login...');
 
@@ -136,8 +134,10 @@ const Register: React.FC = () => {
                 {apiError && (
                     <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                         <div className="flex items-center">
-                            <svg className="h-5 w-5 text-red-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            <svg className="h-5 w-5 text-red-400 mr-2" fill="none" viewBox="0 0 24 24"
+                                 stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
                             <p className="text-red-700 text-sm">{apiError}</p>
                         </div>

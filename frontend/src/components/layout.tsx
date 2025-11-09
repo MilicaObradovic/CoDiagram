@@ -6,7 +6,7 @@ interface LayoutProps {
     children: React.ReactNode;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const Layout: React.FC<LayoutProps> = ({children}) => {
     const [toolbarState, setToolbarState] = useState<ToolbarState>({
         selectedTool: 'select',
         fillColor: '#3B82F6',

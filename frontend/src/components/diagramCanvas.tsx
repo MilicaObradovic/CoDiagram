@@ -37,7 +37,7 @@ import {WebsocketProvider} from "y-websocket";
 import * as Y from 'yjs';
 import {CursorOverlay} from "./cursorOverlay.tsx";
 import type {Edge} from "reactflow";
-import {authApi} from "../services/authApi.ts";
+import {authApi} from "../services/service.ts";
 import {useParams} from "react-router-dom";
 
 interface DiagramCanvasProps {
@@ -83,7 +83,6 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
         };
 
         const edgesObserver = () => {
-            console.log("EDGE SYNC")
             setEdges(Array.from(yEdges.values()));
         };
 
@@ -96,9 +95,6 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
         };
     }, [yDoc]);
 
-    useEffect(() => {
-        console.log('🟢 EDGES STATE ACTUALLY UPDATED:', edges.map(e => e.id));
-    }, [edges]);
     // Cursor management
     useEffect(() => {
         if (!provider || !yDoc) return;
@@ -387,7 +383,6 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
     }, [selectedShape, reactFlowInstance, createNewShape, onShapeCreated]);
 
     const onNodeDoubleClick: NodeMouseHandler = useCallback((_event, node) => {
-        console.log('Node double-clicked:', node.id, 'Current editingNodeId:', editingNodeId);
         setEditingNodeId(node.id);
         const nodeData = node.data as unknown as CustomNodeData;
         setEditText(nodeData?.label || '');

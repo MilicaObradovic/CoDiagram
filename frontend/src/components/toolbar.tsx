@@ -3,7 +3,7 @@ import type {ToolbarState} from "../types/diagram.ts";
 import {useNavigate, useParams} from "react-router-dom";
 import CollaboratorSearch from "./collaboratorSearch.tsx";
 import type {CollaboratorsResponse, UserSearchResult} from "../types/auth.ts";
-import {authApi} from "../services/authApi.ts";
+import {authApi} from "../services/service.ts";
 
 interface ToolbarProps {
     toolbarState: ToolbarState;
@@ -11,7 +11,6 @@ interface ToolbarProps {
 }
 
 const Toolbar: React.FC<ToolbarProps> = () => {
-
     const navigate = useNavigate();
     const [showCollaboratorModal, setShowCollaboratorModal] = useState(false);
     const {id} = useParams();
@@ -29,7 +28,7 @@ const Toolbar: React.FC<ToolbarProps> = () => {
 
     const fetchCollaborators = async () => {
         try {
-            if(id==undefined){
+            if (id == undefined) {
                 setDiagramName("")
                 return;
             }
@@ -99,8 +98,6 @@ const Toolbar: React.FC<ToolbarProps> = () => {
                     {diagramName}
                 </div>
             </div>
-
-
 
             {/* Right Section - User Info & Controls */}
             <div className="flex items-center space-x-4">

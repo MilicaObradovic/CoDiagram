@@ -1,6 +1,6 @@
 import React, {useState, useEffect} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {authApi} from '../services/authApi';
+import {authApi} from '../services/service.ts';
 import type {DiagramResponse} from "../types/diagram.ts";
 
 const DiagramsPage: React.FC = () => {
@@ -89,9 +89,6 @@ const DiagramsPage: React.FC = () => {
             setDiagrams(prev => [newDiagram, ...prev]);
             setNewDiagramName('');
             setIsCreating(false);
-
-            // Navigate to the diagram editor
-            // navigate(`/diagram/${newDiagram._id}`);
             console.log("Diagram created");
         } catch (error) {
             console.error('Error creating diagram:', error);
