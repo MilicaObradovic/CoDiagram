@@ -1,5 +1,5 @@
 import type {Edge} from "reactflow";
-import type { Node} from "@xyflow/react";
+import type {Node} from "@xyflow/react";
 import * as Y from "yjs";
 
 export interface StoreState {
@@ -14,7 +14,6 @@ export interface StoreState {
     addUserHistory: (state: HistoryState) => void;
     updateNodeLabel: (nodeId: string, label: string, origin: string) => void;
 }
-
 
 export interface HistoryState {
     nodes: Node[];

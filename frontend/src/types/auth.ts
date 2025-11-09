@@ -23,6 +23,7 @@ export interface RegisterFormErrors {
     password?: string;
     confirmPassword?: string;
 }
+
 export interface AuthResponse {
     token: string;
     user: {
@@ -32,16 +33,13 @@ export interface AuthResponse {
     };
 }
 
-export interface ErrorResponse {
-    message: string;
-    error?: string;
-}
 export interface UserSearchResult {
     id: string;
     name: string;
     email: string;
     avatar?: string;
 }
+
 export interface CollaboratorsResponse {
     diagram: {
         id: string;
