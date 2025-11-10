@@ -16,6 +16,7 @@ function Diagram() {
     const {id} = useParams();
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(true);
+    const [shapeMenuOpen, setShapeMenuOpen] = useState(true);
     const {initializeYjs, addUserHistory} = useStore();
     const [yDoc, setYDoc] = useState<Y.Doc | null>(null);
     const [provider, setProvider] = useState<WebsocketProvider | null>(null);
@@ -119,14 +120,39 @@ function Diagram() {
 
 
     return (
-        <div className="flex flex-1">
-            {/* Sidebar with Shape Menu */}
-            <div className="w-80 bg-gray-50 border-r border-gray-200 p-4">
-                <ShapeMenu
-                    onShapeSelect={handleShapeSelect}
-                    selectedShape={selectedShape}
-                />
+        <div className="flex flex-1 relative">
+            {/* Pull Handle */}
+            <div
+                className="lg:hidden fixed top-1/2 left-0 z-40 bg-gray-800 text-white p-2 rounded-r-lg cursor-pointer"
+                onClick={() => setShapeMenuOpen(!shapeMenuOpen)}
+            >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>
+                </svg>
             </div>
+
+            {/* Slide-out Panel */}
+            <div className={`
+        fixed top-0 left-0 bottom-0 z-30 w-80 bg-gray-50 border-r border-gray-200
+        transform transition-transform duration-300 ease-in-out
+        ${shapeMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+        lg:static lg:translate-x-0
+    `}>
+                <div className="p-4 h-full overflow-y-auto">
+                    <ShapeMenu
+                        onShapeSelect={handleShapeSelect}
+                        selectedShape={selectedShape}
+                    />
+                </div>
+            </div>
+
+            {/* Overlay */}
+            {shapeMenuOpen && (
+                <div
+                    className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
+                    onClick={() => setShapeMenuOpen(false)}
+                />
+            )}
 
             {/* Main Canvas Area */}
             <div className="flex-1 bg-gray-100">
