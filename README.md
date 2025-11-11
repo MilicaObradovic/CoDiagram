@@ -16,10 +16,10 @@ A collaborative diagram creation app with real-time editing
 
 ![alt text](<readme-images/Screenshot 2025-11-11 at 10.54.27.png>)
 
-![alt text](<readme-images/Screenshot 2025-11-11 at 10.48.51.png>)
+![alt text](<readme-images/Screenshot 2025-11-11 at 16.06.14.png>)
 
-![alt text](<readme-images/Screenshot 2025-11-11 at 10.49.09.png>)
+![alt text](<readme-images/Screenshot 2025-11-11 at 16.06.22.png>)
 
-![alt text](<readme-images/Screenshot 2025-11-11 at 10.49.19.png>)
+![alt text](<readme-images/Screenshot 2025-11-11 at 16.07.19.png>)
 
 

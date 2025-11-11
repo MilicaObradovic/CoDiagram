@@ -143,7 +143,7 @@ const DiagramsPage: React.FC = () => {
     }
     return (
         <div
-            className="flex flex-1 bg-gradient-to-br from-blue-50 to-indigo-100 overflow-auto"> {/* Add overflow-auto */}
+            className="flex flex-1 bg-gray-50 overflow-auto"> {/* Add overflow-auto */}
             <div className="flex-1 py-8"> {/* Remove max-w-6xl mx-auto from outer div */}
                 <div className="max-w-6xl mx-auto px-4">
                     {/* Header */}
