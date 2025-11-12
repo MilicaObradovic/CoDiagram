@@ -5,8 +5,7 @@ import {useEffect, useState} from "react";
 import {type Edge, ReactFlowProvider} from "reactflow";
 import {useParams} from "react-router-dom";
 import {authApi} from "../services/service.ts";
-import {useStore} from "../store";
-import {UndoRedo} from "../store/undo-redo.ts";
+import {UndoRedoManager} from "../store/undo-redo.ts";
 import {WebsocketProvider} from "y-websocket";
 import * as Y from 'yjs';
 import type {Node} from "@xyflow/react";
@@ -17,7 +16,6 @@ function Diagram() {
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [shapeMenuOpen, setShapeMenuOpen] = useState(true);
-    const {initializeYjs, addUserHistory} = useStore();
     const [yDoc, setYDoc] = useState<Y.Doc | null>(null);
     const [provider, setProvider] = useState<WebsocketProvider | null>(null);
 
@@ -34,11 +32,14 @@ function Diagram() {
                 console.log('Not authenticated');
                 return;
             }
+            const userString = sessionStorage.getItem('user');
+            const user = JSON.parse(userString);
             // 1. Initialize Yjs
             console.log('Initializing Yjs...');
             const doc = new Y.Doc();
-            UndoRedo.setYDoc(doc);
-
+            UndoRedoManager.setYDoc(doc);
+            UndoRedoManager.setUserId(user.id)
+            UndoRedoManager.initializeUserUndoManager();
             const wsProvider = new WebsocketProvider(
                 'ws://localhost:1234/',
                 String(diagramId), // room name
@@ -48,13 +49,10 @@ function Diagram() {
             setYDoc(doc);
             setProvider(wsProvider);
 
-            // 2. Initialize store with Yjs
-            initializeYjs(doc);
-
-            // 3. Load data from database
+            // 2. Load data from database
             const diagramData = await authApi.getDiagramById(diagramId, token);
 
-            // 4. Load data into Yjs (which will automatically sync to React Flow)
+            // 3. Load data into Yjs (which will automatically sync to React Flow)
             const yNodes = doc.getMap('nodes');
             const yEdges = doc.getMap('edges');
 
@@ -68,11 +66,6 @@ function Diagram() {
 
             diagramData.edges.forEach((edge: Edge) => {
                 yEdges.set(edge.id, edge);
-            });
-            addUserHistory({
-                nodes: diagramData.nodes,
-                edges: diagramData.edges,
-                type: 'loaded'
             });
 
         } catch (error) {

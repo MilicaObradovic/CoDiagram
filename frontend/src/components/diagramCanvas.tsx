@@ -31,7 +31,6 @@ import CustomNodeDiv from './customNodeDiv.tsx'
 import DownloadButton from "./downloadButton.tsx";
 import '@xyflow/react/dist/style.css';
 import CustomEdge from './bidirectionalEdge.tsx';
-import {useStore} from '../store';
 import EdgeToolbar from "./edgeToolbar.tsx";
 import {WebsocketProvider} from "y-websocket";
 import * as Y from 'yjs';
@@ -39,6 +38,7 @@ import {CursorOverlay} from "./cursorOverlay.tsx";
 import type {Edge} from "reactflow";
 import {authApi} from "../services/service.ts";
 import {useParams} from "react-router-dom";
+import {UndoRedoManager} from "../store/undo-redo.ts";
 
 interface DiagramCanvasProps {
     selectedShape: ShapeType;
@@ -48,8 +48,7 @@ interface DiagramCanvasProps {
 }
 
 const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCreated, yDoc, provider}) => {
-    // Zustand store for undo/redo and state management
-    const {undo, redo, canUndo, canRedo, setCurrentUser, addUserHistory} = useStore();
+    // const {undo, redo, canUndo, canRedo, setCurrentUser, addUserHistory} = useStore();
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
     const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
     const [editText, setEditText] = useState('');
@@ -59,13 +58,6 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
     const [nodes, setNodes] = useState<Node[]>([]);
     const [edges, setEdges] = useState<Edge[]>([]);
     const {id} = useParams();
-
-    useEffect(() => {
-        if (provider) {
-            const userId = provider.awareness.clientID.toString();
-            setCurrentUser(userId);
-        }
-    }, [provider]);
 
     useEffect(() => {
         if (!yDoc) return;
@@ -78,22 +70,23 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
         setEdges(Array.from(yEdges.values()));
 
         // Listen for changes
-        const nodesObserver = () => {
-            setNodes(Array.from(yNodes.values()));
-        };
-
-        const edgesObserver = () => {
-            setEdges(Array.from(yEdges.values()));
-        };
-
-        yNodes.observe(nodesObserver);
-        yEdges.observe(edgesObserver);
+        // const nodesObserver = () => {
+        //     setNodes(Array.from(yNodes.values()));
+        // };
+        //
+        // const edgesObserver = () => {
+        //     setEdges(Array.from(yEdges.values()));
+        // };
+        //
+        // yNodes.observe(nodesObserver);
+        // yEdges.observe(edgesObserver);
 
         return () => {
-            yNodes.unobserve(nodesObserver);
-            yEdges.unobserve(edgesObserver);
+            // yNodes.unobserve(nodesObserver);
+            // yEdges.unobserve(edgesObserver);
         };
     }, [yDoc]);
+
 
     // Cursor management
     useEffect(() => {
@@ -177,73 +170,30 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
                 }
             });
         });
-        const shouldSaveHistory = changes.some(change =>
-            change.type === 'remove' ||
-            (change.type === 'position' && change.dragging === false) ||
-            (change.type === 'dimensions' && change.resizing === false)
-        );
-
         const updatedNodes = applyNodeChanges(changes, nodes);
         setNodes(updatedNodes);
-        if (shouldSaveHistory) {
-            addUserHistory({
-                nodes: Array.from(yDoc.getMap('nodes').values()),
-                edges: Array.from(yDoc.getMap('edges').values()),
-                type: 'user'
-            });
-        }
-    }, [yDoc, nodes, addUserHistory]);
+    }, [yDoc, nodes]);
 
     const onEdgesChange = useCallback((changes: EdgeChange[]) => {
         if (!yDoc) return;
-
-        let shouldSaveHistory = false;
 
         const yEdgesMap = yDoc.getMap('edges');
         const currentEdges = Array.from(yEdgesMap.values());
         const updatedEdges = applyEdgeChanges(changes, currentEdges);
         setEdges(updatedEdges); // Update your local state
-
+        console.log('onEdgesChange called, userId:', UndoRedoManager.userId);
         yDoc.transact(() => {
             const yEdges = yDoc.getMap('edges');
 
             changes.forEach(change => {
                 console.log('Processing edge change:', change.type, change.id);
-
-                if (change.type === 'add') {
-                    // Add user metadata to new edge
-                    const edgeWithMetadata = {
-                        ...change.item,
-                        data: {
-                            ...change.item.data,
-                            createdBy: provider?.awareness.clientID.toString(),
-                            lastModifiedBy: provider?.awareness.clientID.toString(),
-                            createdAt: Date.now(),
-                            lineStyle: selectedLineStyle
-                        },
-                        type: selectedEdgeType
-                    };
-
-                    yEdges.set(edgeWithMetadata.id, edgeWithMetadata);
-                    shouldSaveHistory = true;
-
-                } else if (change.type === 'remove') {
+                if (change.type === 'remove') {
                     yEdges.delete(change.id);
-                    shouldSaveHistory = true;
                 }
             });
-        });
+        }, `user-${UndoRedoManager.userId}`);
 
-        // Save to undo/redo history for significant changes
-        if (shouldSaveHistory) {
-            addUserHistory({
-                nodes: Array.from(yDoc.getMap('nodes').values()),
-                edges: Array.from(yDoc.getMap('edges').values()),
-                type: 'user'
-            });
-        }
-
-    }, [yDoc, provider, selectedEdgeType, selectedLineStyle, addUserHistory]);
+    }, [yDoc, provider]);
 
     const onConnect = useCallback((connection: Connection) => {
         if (!yDoc) return;
@@ -272,20 +222,14 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
             console.log('Creating new edge:', newEdge.id);
             yEdges.set(newEdge.id, newEdge);
 
-            // Save to undo/redo history
-            addUserHistory({
-                nodes: Array.from(yDoc.getMap('nodes').values()),
-                edges: Array.from(yEdges.values()),
-                type: 'user'
-            });
         });
 
-    }, [yDoc, provider, selectedEdgeType, selectedLineStyle, addUserHistory]);
+    }, [yDoc, provider, selectedEdgeType, selectedLineStyle]);
 
     const handleEdgeClick = useCallback((edgeId: string, edgeType: EdgeType, lineStyle?: LineStyle, origin: 'user' | 'yjs' | 'loaded' | 'undo-redo' = 'user') => {
         if (!yDoc) return;
 
-        const userId = provider?.awareness.clientID.toString();
+        const userId = sessionStorage.getItem('user');
 
         yDoc.transact(() => {
             const yEdges = yDoc.getMap('edges');
@@ -319,15 +263,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
             }
         });
 
-        // Save to user's history for user actions
-        if (origin === 'user' && userId) {
-            addUserHistory({
-                nodes: Array.from(yDoc.getMap('nodes').values()),
-                edges: Array.from(yDoc.getMap('edges').values()),
-                type: origin
-            });
-        }
-    }, [yDoc, provider, addUserHistory]);
+    }, [yDoc, provider]);
 
     const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
         const ctrl = event.ctrlKey ? 'Control-' : '';
@@ -335,8 +271,8 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
         const meta = event.metaKey ? 'Meta-' : '';
         const shift = event.shiftKey ? 'Shift-' : '';
         const key = `${ctrl}${alt}${shift}${meta}${event.key}`;
-        if (key === 'Meta-z') undo();
-        if (key === 'Shift-Meta-z') redo();
+        if (key === 'Meta-z') UndoRedoManager.undo();
+        if (key === 'Shift-Meta-z') UndoRedoManager.redo();
     };
 
     const createNewShape = useCallback((shapeType: string) => {
@@ -350,7 +286,6 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
             y: window.innerHeight / 2,
         });
         const dimensions = getShapeDimensions(shapeType);
-
         const newNode: Node = {
             id: `${shapeType}-${Date.now()}`,
             type: 'default',
@@ -368,11 +303,6 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
         // add to Yjs
         const yNodes = yDoc.getMap('nodes');
         yNodes.set(newNode.id, newNode);
-        addUserHistory({
-            nodes: Array.from(yNodes.values()),
-            edges: Array.from(yDoc.getMap('edges').values()),
-            type: 'user'
-        });
         onShapeCreated();
     }, [reactFlowInstance, yDoc, onShapeCreated]);
 
@@ -535,13 +465,13 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
                               showFitView={false}
                               showInteractive={false}>
                         <ControlButton title="Undo"
-                                       onClick={undo}
-                                       disabled={!canUndo?.()}>
+                                       onClick={UndoRedoManager.undo()}
+                                       disabled={!UndoRedoManager.canUndo()}>
                             <div style={{fontSize: 24}}>&#x27F2;</div>
                         </ControlButton>
                         <ControlButton title="Redo"
-                                       onClick={redo}
-                                       disabled={!canRedo?.()}>
+                                       onClick={UndoRedoManager.redo()}
+                                       disabled={!UndoRedoManager.canRedo()}>
                             <div style={{fontSize: 24}}>&#x27F3;</div>
                         </ControlButton>
                         <DownloadButton/>

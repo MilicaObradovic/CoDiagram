@@ -1,124 +1,64 @@
-import type {HistoryState} from '../types/store.ts'
 import * as Y from 'yjs';
 
-export const UndoRedo = {
-    maxHistory: 50,
-    userHistories: new Map<string, { history: HistoryState[], position: number }>(),
-    currentUserId: null as string | null,
+export const UndoRedoManager = {
+    undoManagers: new Map<string, Y.UndoManager>(),
     yDoc: null as Y.Doc | null,
+    userId: "" as string,
 
-    setYDoc(doc: Y.Doc | null): void {
+    setYDoc(doc: Y.Doc): void {
         this.yDoc = doc;
     },
-
-    setCurrentUser(userId: string): void {
-        this.currentUserId = userId;
-        if (!this.userHistories.has(userId)) {
-            this.userHistories.set(userId, {history: [], position: 0});
-        }
-    },
-    canUndo(userId?: string): boolean {
-        const targetUserId = userId || this.currentUserId;
-        if (!targetUserId) return false;
-
-        const userHistory = this.userHistories.get(targetUserId);
-        return userHistory ? userHistory.position > 0 && userHistory.history[userHistory.position].type !== "loaded" : false;
+    setUserId(uid: string): void {
+        this.userId = uid;
     },
 
-    canRedo(userId?: string): boolean {
-        const targetUserId = userId || this.currentUserId;
-        if (!targetUserId) return false;
-
-        const userHistory = this.userHistories.get(targetUserId);
-        return userHistory ? userHistory.position < userHistory.history.length - 1 : false;
-    },
-
-    undo(userId?: string): HistoryState | undefined {
-        const targetUserId = userId || this.currentUserId;
-        if (!targetUserId) return;
-
-        const userHistory = this.userHistories.get(targetUserId);
-        if (userHistory && userHistory.position > 0) {
-            userHistory.position--;
-            const state = userHistory.history[userHistory.position];
-
-            if (this.yDoc && state) {
-                this.applyUserStateToYjs(targetUserId, state);
-            }
-            return state;
-        }
-    },
-
-    redo(userId?: string): HistoryState | undefined {
-        const targetUserId = userId || this.currentUserId;
-        if (!targetUserId) return;
-
-        const userHistory = this.userHistories.get(targetUserId);
-        if (userHistory && userHistory.position < userHistory.history.length - 1) {
-            userHistory.position++;
-            const state = userHistory.history[userHistory.position];
-
-            if (this.yDoc && state) {
-                this.applyUserStateToYjs(targetUserId, state);
-            }
-            return state;
-        }
-    },
-
-    applyUserStateToYjs(userId: string, state: HistoryState): void {
+    initializeUserUndoManager(): void {
         if (!this.yDoc) return;
 
-        this.yDoc.transact(() => {
-            const yNodes = this.yDoc!.getMap('nodes');
-            const yEdges = this.yDoc!.getMap('edges');
+        const yNodes = this.yDoc.getMap('nodes');
+        const yEdges = this.yDoc.getMap('edges');
 
-            // For undo/redo, only revert changes made by this specific user
-            // This prevents affecting other users' work
-            state.nodes.forEach(node => {
-                const currentYNode = yNodes.get(node.id);
-                // Only update if this user owns the node or it's in the desired state
-                if (node.data?.createdBy === userId || !currentYNode) {
-                    yNodes.set(node.id, node);
-                }
-            });
+        // Track both maps for this user
+        const undoManager = new Y.UndoManager([yNodes, yEdges], {
+            trackedOrigins: new Set([`user-${this.userId}`])
+        });
 
-            state.edges.forEach(edge => {
-                const currentYEdge = yEdges.get(edge.id);
-                if (edge.data?.createdBy === userId || !currentYEdge) {
-                    yEdges.set(edge.id, edge);
-                }
-            });
-
-            // Remove nodes/edges that were deleted by this user
-            const currentYNodes = Array.from(yNodes.values());
-            const currentYEdges = Array.from(yEdges.values());
-
-            currentYNodes.forEach(currentNode => {
-                const shouldExist = state.nodes.some(node => node.id === currentNode.id);
-                if (!shouldExist && currentNode.data?.createdBy === userId) {
-                    yNodes.delete(currentNode.id);
-                }
-            });
-
-            currentYEdges.forEach(currentEdge => {
-                const shouldExist = state.edges.some(edge => edge.id === currentEdge.id);
-                if (!shouldExist && currentEdge.data?.createdBy === userId) {
-                    yEdges.delete(currentEdge.id);
-                }
-            });
-        }, `undo-redo-${userId}`);
+        this.undoManagers.set(this.userId, undoManager);
     },
 
-    addUserHistory(userId: string, item: HistoryState): void {
-        if (!this.userHistories.has(userId)) {
-            this.userHistories.set(userId, {history: [], position: 0});
+    canUndo(): boolean {
+        const undoManager = this.undoManagers.get(this.userId);
+        return undoManager ? undoManager.undoStack.length > 0 : false;
+    },
+
+    canRedo(): boolean {
+        const undoManager = this.undoManagers.get(this.userId);
+        return undoManager ? undoManager.redoStack.length > 0 : false;
+    },
+
+    undo(): void {
+        const undoManager = this.undoManagers.get(this.userId);
+        if (undoManager) {
+            undoManager.undo();
         }
-
-        const userHistory = this.userHistories.get(userId)!;
-        userHistory.history = userHistory.history
-            .slice(0, userHistory.position + 1)
-            .concat(structuredClone(item))
-            .slice(-this.maxHistory);
-        userHistory.position = userHistory.history.length - 1;
     },
+
+    redo(): void {
+        const undoManager = this.undoManagers.get(this.userId);
+        if (undoManager) {
+            undoManager.redo();
+        }
+    },
+
+    // When making changes, specify the user origin
+    makeChange(changeFunction: () => void): void {
+        if (this.yDoc) {
+            this.yDoc.transact(changeFunction, `user-${this.userId}`);
+        }
+    },
+
+    // Clean up when user disconnects
+    removeUserUndoManager(): void {
+        this.undoManagers.delete(this.userId);
+    }
 };
