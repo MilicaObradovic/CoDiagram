@@ -75,20 +75,22 @@ const Toolbar: React.FC<ToolbarProps> = () => {
                 {/* Left Section - Logo & Title */}
                 <div className="flex items-center space-x-4 flex-shrink-0">
                     {/* Logo and Title */}
-                    <div className="flex w-72 items-center space-x-3">
+                    <div className="flex w-72 justify-around items-center space-x-3">
                         {/* Logo */}
-                        <div
-                            className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <img
-                                src="/logo.png"
-                                alt="CoDiagram Logo"
-                                className="w-full h-full object-contain"
-                            />
+                        <div className="flex items-center space-x-2">
+                            <div
+                                className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <img
+                                    src="/logo.png"
+                                    alt="CoDiagram Logo"
+                                    className="w-full h-full object-contain"
+                                />
+                            </div>
+                            {/* Title - hidden on small mobile, visible on sm and up */}
+                            <h1 className="text-lg sm:text-xl font-bold text-white hidden sm:block">
+                                CoDiagram
+                            </h1>
                         </div>
-                        {/* Title - hidden on small mobile, visible on sm and up */}
-                        <h1 className="text-lg sm:text-xl font-bold text-white hidden sm:block">
-                            CoDiagram
-                        </h1>
                     </div>
 
                     {/* Vertical divider - hidden on mobile */}
