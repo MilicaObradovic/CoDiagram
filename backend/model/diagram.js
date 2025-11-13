@@ -16,6 +16,8 @@ const edgeSchema = new mongoose.Schema({
   id: String,
   source: String,
   target: String,
+  sourceHandle: String,
+  targetHandle: String,
   type: String,
   data: {lineStyle: String}
 });
