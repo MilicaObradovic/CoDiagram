@@ -38,8 +38,9 @@ function Diagram() {
             console.log('Initializing Yjs...');
             const doc = new Y.Doc();
             UndoRedoManager.setYDoc(doc);
-            UndoRedoManager.setUserId(user.id)
+            UndoRedoManager.setUserId(user.id);
             UndoRedoManager.initializeUserUndoManager();
+
             const wsProvider = new WebsocketProvider(
                 'ws://localhost:1234/',
                 String(diagramId), // room name

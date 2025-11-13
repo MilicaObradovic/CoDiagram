@@ -4,6 +4,7 @@ import {useNavigate, useParams} from "react-router-dom";
 import CollaboratorSearch from "./collaboratorSearch.tsx";
 import type {CollaboratorsResponse, UserSearchResult} from "../types/auth.ts";
 import {authApi} from "../services/service.ts";
+import {UndoRedoManager} from "../store/undo-redo.ts";
 
 interface ToolbarProps {
     toolbarState: ToolbarState;
@@ -55,6 +56,7 @@ const Toolbar: React.FC<ToolbarProps> = () => {
     };
 
     const handleLogout = () => {
+        UndoRedoManager.removeUserUndoManager();
         sessionStorage.removeItem('token');
         sessionStorage.removeItem('user');
         navigate('/login');

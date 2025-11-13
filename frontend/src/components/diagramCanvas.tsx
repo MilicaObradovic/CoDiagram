@@ -1,32 +1,7 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {
-    applyEdgeChanges,
-    applyNodeChanges,
-    Background,
-    type Connection,
-    ConnectionLineType,
-    ConnectionMode,
-    ControlButton,
-    Controls,
-    type EdgeChange,
-    MiniMap,
-    type Node,
-    type NodeChange,
-    type NodeMouseHandler,
-    Panel,
-    ReactFlow,
-    type ReactFlowInstance
-} from '@xyflow/react';
+import {Background, ConnectionLineType, ConnectionMode, ControlButton, Controls, MiniMap, type Node, type NodeMouseHandler, Panel, ReactFlow, type ReactFlowInstance} from '@xyflow/react';
 import 'reactflow/dist/style.css';
-import {
-    type CustomNodeData,
-    type EdgeType,
-    EdgeTypes,
-    getShapeDimensions,
-    type LineStyle,
-    LineStyles,
-    type ShapeType
-} from "../types/diagram.ts";
+import {type CustomNodeData, type EdgeType, EdgeTypes, type LineStyle, LineStyles, type ShapeType} from "../types/diagram.ts";
 import CustomNodeDiv from './customNodeDiv.tsx'
 import DownloadButton from "./downloadButton.tsx";
 import '@xyflow/react/dist/style.css';
@@ -39,6 +14,7 @@ import type {Edge} from "reactflow";
 import {authApi} from "../services/service.ts";
 import {useParams} from "react-router-dom";
 import {UndoRedoManager} from "../store/undo-redo.ts";
+import {useStore} from "../store";
 
 interface DiagramCanvasProps {
     selectedShape: ShapeType;
@@ -46,9 +22,15 @@ interface DiagramCanvasProps {
     yDoc: Y.Doc | null;
     provider: WebsocketProvider | null;
 }
+const edgeTypes = {
+    [EdgeTypes.STEP]: CustomEdge,
+    [EdgeTypes.SMOOTHSTEP]: CustomEdge,
+    [EdgeTypes.STRAIGHT]: CustomEdge,
+    [EdgeTypes.BEZIER]: CustomEdge,
+    default: CustomEdge,
+};
 
 const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCreated, yDoc, provider}) => {
-    // const {undo, redo, canUndo, canRedo, setCurrentUser, addUserHistory} = useStore();
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
     const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
     const [editText, setEditText] = useState('');
@@ -58,7 +40,13 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
     const [nodes, setNodes] = useState<Node[]>([]);
     const [edges, setEdges] = useState<Edge[]>([]);
     const {id} = useParams();
-
+    const {
+        createOnNodesChange,
+        createOnEdgesChange,
+        createOnConnect,
+        handleEdgeClick,
+        createNewShape
+    } = useStore();
     useEffect(() => {
         if (!yDoc) return;
 
@@ -68,26 +56,33 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
         // Initial load
         setNodes(Array.from(yNodes.values()));
         setEdges(Array.from(yEdges.values()));
+        const nodesObserver = () => {
+            const latestNodes = Array.from(yNodes.values());
 
-        // Listen for changes
-        // const nodesObserver = () => {
-        //     setNodes(Array.from(yNodes.values()));
-        // };
-        //
-        // const edgesObserver = () => {
-        //     setEdges(Array.from(yEdges.values()));
-        // };
-        //
-        // yNodes.observe(nodesObserver);
-        // yEdges.observe(edgesObserver);
+            // Preserve selection state from current nodes
+            const nodesWithSelection = latestNodes.map(latestNode => {
+                const currentNode = nodes.find(n => n.id === latestNode.id);
+                return {
+                    ...latestNode,
+                    selected: currentNode?.selected || false
+                };
+            });
+
+            setNodes(nodesWithSelection);
+        };
+
+        const edgesObserver = () => {
+            setEdges(Array.from(yEdges.values()));
+        };
+
+        yNodes.observe(nodesObserver);
+        yEdges.observe(edgesObserver);
 
         return () => {
-            // yNodes.unobserve(nodesObserver);
-            // yEdges.unobserve(edgesObserver);
+            yNodes.unobserve(nodesObserver);
+            yEdges.unobserve(edgesObserver);
         };
     }, [yDoc]);
-
-
     // Cursor management
     useEffect(() => {
         if (!provider || !yDoc) return;
@@ -133,137 +128,12 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
             yCursors.delete(provider.awareness.clientID.toString());
         };
     }, [provider, yDoc]);
-
-    const onNodesChange = useCallback((changes: NodeChange[]) => {
-        if (!yDoc) return;
-        yDoc.transact(() => {
-            const yNodes = yDoc.getMap('nodes');
-
-            changes.forEach(change => {
-                if (change.type === 'position') {
-                    if (change.dragging !== false) {
-                        const existingNode = yNodes.get(change.id);
-                        if (existingNode) {
-                            const updatedNode = {
-                                ...existingNode,
-                                position: change.position
-                            };
-                            yNodes.set(change.id, updatedNode);
-                        }
-                    }
-                } else if (change.type === 'dimensions') {
-                    if (change.resizing === false) {
-                        // Sync final resize value
-                        const existingNode = yNodes.get(change.id);
-                        if (existingNode && change.dimensions) {
-                            const updatedNode = {
-                                ...existingNode,
-                                width: Math.max(20, change.dimensions.width),
-                                height: Math.max(20, change.dimensions.height),
-                                position: change.position ? change.position : existingNode.position
-                            };
-                            yNodes.set(change.id, updatedNode);
-                        }
-                    }
-                } else if (change.type === 'remove') {
-                    yNodes.delete(change.id);
-                }
-            });
-        });
-        const updatedNodes = applyNodeChanges(changes, nodes);
-        setNodes(updatedNodes);
-    }, [yDoc, nodes]);
-
-    const onEdgesChange = useCallback((changes: EdgeChange[]) => {
-        if (!yDoc) return;
-
-        const yEdgesMap = yDoc.getMap('edges');
-        const currentEdges = Array.from(yEdgesMap.values());
-        const updatedEdges = applyEdgeChanges(changes, currentEdges);
-        setEdges(updatedEdges); // Update your local state
-        console.log('onEdgesChange called, userId:', UndoRedoManager.userId);
-        yDoc.transact(() => {
-            const yEdges = yDoc.getMap('edges');
-
-            changes.forEach(change => {
-                console.log('Processing edge change:', change.type, change.id);
-                if (change.type === 'remove') {
-                    yEdges.delete(change.id);
-                }
-            });
-        }, `user-${UndoRedoManager.userId}`);
-
-    }, [yDoc, provider]);
-
-    const onConnect = useCallback((connection: Connection) => {
-        if (!yDoc) return;
-
-        yDoc.transact(() => {
-            const yEdges = yDoc.getMap('edges');
-
-            // Generate unique edge ID
-            const edgeId = `edge-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-
-            const newEdge: Edge = {
-                id: edgeId,
-                source: connection.source,
-                target: connection.target,
-                sourceHandle: connection.sourceHandle,
-                targetHandle: connection.targetHandle,
-                type: selectedEdgeType,
-                data: {
-                    createdBy: provider?.awareness.clientID.toString(),
-                    lastModifiedBy: provider?.awareness.clientID.toString(),
-                    createdAt: Date.now(),
-                    lineStyle: selectedLineStyle
-                }
-            };
-
-            console.log('Creating new edge:', newEdge.id);
-            yEdges.set(newEdge.id, newEdge);
-
-        });
-
-    }, [yDoc, provider, selectedEdgeType, selectedLineStyle]);
-
-    const handleEdgeClick = useCallback((edgeId: string, edgeType: EdgeType, lineStyle?: LineStyle, origin: 'user' | 'yjs' | 'loaded' | 'undo-redo' = 'user') => {
-        if (!yDoc) return;
-
-        const userId = sessionStorage.getItem('user');
-
-        yDoc.transact(() => {
-            const yEdges = yDoc.getMap('edges');
-            const existingEdge = yEdges.get(edgeId);
-
-            if (existingEdge) {
-                const updatedEdge = {
-                    ...existingEdge,
-                    type: edgeType,
-                    // Update last modified info for user actions
-                    ...(origin === 'user' && userId && {
-                        data: {
-                            ...existingEdge.data,
-                            lastModifiedBy: userId,
-                            lastModifiedAt: Date.now(),
-                            ...(lineStyle && {lineStyle})
-                        }
-                    })
-                };
-
-                // Handle lineStyle separately for non-user origins
-                if (lineStyle && (origin !== 'user' || !userId)) {
-                    updatedEdge.data = {
-                        ...updatedEdge.data,
-                        lineStyle: lineStyle
-                    };
-                }
-
-                yEdges.set(edgeId, updatedEdge);
-                console.log('Updated edge style in Y.js:', edgeId, edgeType, lineStyle);
-            }
-        });
-
-    }, [yDoc, provider]);
+    // Create handlers using the store
+    const onNodesChange = createOnNodesChange(yDoc, nodes, setNodes);
+    const onEdgesChange = createOnEdgesChange(yDoc, setEdges);
+    const onConnect = createOnConnect(yDoc, selectedEdgeType, selectedLineStyle, provider);
+    const onEdgeClick = handleEdgeClick(yDoc, provider);
+    const onCreateNewShape = createNewShape(reactFlowInstance, yDoc, onShapeCreated, provider);
 
     const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
         const ctrl = event.ctrlKey ? 'Control-' : '';
@@ -275,40 +145,9 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
         if (key === 'Shift-Meta-z') UndoRedoManager.redo();
     };
 
-    const createNewShape = useCallback((shapeType: string) => {
-        if (!reactFlowInstance || !yDoc) {
-            console.log('Cannot create shape: missing reactFlowInstance or yDoc');
-            return;
-        }
-
-        const position = reactFlowInstance.screenToFlowPosition({
-            x: window.innerWidth / 2,
-            y: window.innerHeight / 2,
-        });
-        const dimensions = getShapeDimensions(shapeType);
-        const newNode: Node = {
-            id: `${shapeType}-${Date.now()}`,
-            type: 'default',
-            position,
-            data: {
-                label: `${shapeType.charAt(0).toUpperCase() + shapeType.slice(1)}`,
-                shapeType: shapeType,
-                createdBy: provider?.awareness.clientID.toString(),
-                createdAt: Date.now()
-            },
-            width: dimensions.width,
-            height: dimensions.height,
-        };
-
-        // add to Yjs
-        const yNodes = yDoc.getMap('nodes');
-        yNodes.set(newNode.id, newNode);
-        onShapeCreated();
-    }, [reactFlowInstance, yDoc, onShapeCreated]);
-
     useEffect(() => {
         if (selectedShape && reactFlowInstance) {
-            createNewShape(selectedShape);
+            onCreateNewShape(selectedShape);
         }
     }, [selectedShape, reactFlowInstance, createNewShape, onShapeCreated]);
 
@@ -316,31 +155,21 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
         setEditingNodeId(node.id);
         const nodeData = node.data as unknown as CustomNodeData;
         setEditText(nodeData?.label || '');
-    }, [editingNodeId]);
-
-    const CustomNodeWithProps = useCallback((props: any) => (
-        <CustomNodeDiv
-            {...props}
-            editingNodeId={editingNodeId}
-            setEditingNodeId={setEditingNodeId}
-            editText={editText}
-            setEditText={setEditText}
-            selected={props.selected}
-            currentNode={nodes.find(node => node.id === props.id)}
-        />
-    ), [editingNodeId, editText]);
+    }, []);
 
     const nodeTypes = useMemo(() => ({
-        default: CustomNodeWithProps,
-    }), [CustomNodeWithProps]);
-
-    const edgeTypes = useMemo(() => ({
-        [EdgeTypes.STEP]: CustomEdge,
-        [EdgeTypes.SMOOTHSTEP]: CustomEdge,
-        [EdgeTypes.STRAIGHT]: CustomEdge,
-        [EdgeTypes.BEZIER]: CustomEdge,
-        default: CustomEdge,
-    }), []);
+        default: (props: any) => (
+            <CustomNodeDiv
+                {...props}
+                editingNodeId={editingNodeId}
+                setEditingNodeId={setEditingNodeId}
+                editText={editText}
+                setEditText={setEditText}
+                selected={props.selected}
+                currentNode={props.data}
+            />
+        ),
+    }), [editingNodeId, editText, setEditingNodeId, setEditText]);
 
     const getConnectionLineType = useCallback((edgeType: EdgeType) => {
         switch (edgeType) {
@@ -465,12 +294,12 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
                               showFitView={false}
                               showInteractive={false}>
                         <ControlButton title="Undo"
-                                       onClick={UndoRedoManager.undo()}
+                                       onClick={UndoRedoManager.undo}
                                        disabled={!UndoRedoManager.canUndo()}>
                             <div style={{fontSize: 24}}>&#x27F2;</div>
                         </ControlButton>
                         <ControlButton title="Redo"
-                                       onClick={UndoRedoManager.redo()}
+                                       onClick={UndoRedoManager.redo}
                                        disabled={!UndoRedoManager.canRedo()}>
                             <div style={{fontSize: 24}}>&#x27F3;</div>
                         </ControlButton>
@@ -481,7 +310,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
                             selectedEdgeType={selectedEdgeType}
                             onEdgeTypeSelect={setSelectedEdgeType}
                             selectedEdgeId={selectedEdgeId}
-                            onUpdateEdge={handleEdgeClick}
+                            onUpdateEdge={onEdgeClick}
                             selectedLineStyle={selectedLineStyle}
                             onLineStyleSelect={setSelectedLineStyle}
                         />

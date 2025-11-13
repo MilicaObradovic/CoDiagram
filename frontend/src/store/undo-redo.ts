@@ -4,14 +4,12 @@ export const UndoRedoManager = {
     undoManagers: new Map<string, Y.UndoManager>(),
     yDoc: null as Y.Doc | null,
     userId: "" as string,
-
     setYDoc(doc: Y.Doc): void {
         this.yDoc = doc;
     },
     setUserId(uid: string): void {
         this.userId = uid;
     },
-
     initializeUserUndoManager(): void {
         if (!this.yDoc) return;
 
@@ -25,40 +23,33 @@ export const UndoRedoManager = {
 
         this.undoManagers.set(this.userId, undoManager);
     },
-
     canUndo(): boolean {
         const undoManager = this.undoManagers.get(this.userId);
         return undoManager ? undoManager.undoStack.length > 0 : false;
     },
-
     canRedo(): boolean {
         const undoManager = this.undoManagers.get(this.userId);
         return undoManager ? undoManager.redoStack.length > 0 : false;
     },
-
     undo(): void {
         const undoManager = this.undoManagers.get(this.userId);
         if (undoManager) {
+            console.log("undo")
             undoManager.undo();
         }
     },
-
     redo(): void {
         const undoManager = this.undoManagers.get(this.userId);
         if (undoManager) {
             undoManager.redo();
         }
     },
-
-    // When making changes, specify the user origin
-    makeChange(changeFunction: () => void): void {
-        if (this.yDoc) {
-            this.yDoc.transact(changeFunction, `user-${this.userId}`);
-        }
-    },
-
-    // Clean up when user disconnects
     removeUserUndoManager(): void {
         this.undoManagers.delete(this.userId);
     }
 };
+// Bind the methods to preserve 'this' context
+UndoRedoManager.undo = UndoRedoManager.undo.bind(UndoRedoManager);
+UndoRedoManager.redo = UndoRedoManager.redo.bind(UndoRedoManager);
+UndoRedoManager.canUndo = UndoRedoManager.canUndo.bind(UndoRedoManager);
+UndoRedoManager.canRedo = UndoRedoManager.canRedo.bind(UndoRedoManager);
