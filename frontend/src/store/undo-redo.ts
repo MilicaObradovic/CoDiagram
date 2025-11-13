@@ -77,14 +77,14 @@ export const UndoRedo = {
             state.nodes.forEach(node => {
                 const currentYNode = yNodes.get(node.id);
                 // Only update if this user owns the node or it's in the desired state
-                if (node.data?.createdBy === userId || !currentYNode) {
+                if (node.data?.lastModifiedBy === userId || !currentYNode) {
                     yNodes.set(node.id, node);
                 }
             });
 
             state.edges.forEach(edge => {
                 const currentYEdge = yEdges.get(edge.id);
-                if (edge.data?.createdBy === userId || !currentYEdge) {
+                if (edge.data?.lastModifiedBy === userId || !currentYEdge) {
                     yEdges.set(edge.id, edge);
                 }
             });
@@ -95,14 +95,15 @@ export const UndoRedo = {
 
             currentYNodes.forEach(currentNode => {
                 const shouldExist = state.nodes.some(node => node.id === currentNode.id);
-                if (!shouldExist && currentNode.data?.createdBy === userId) {
+                console.log(currentNode.data?.createdBy, "-",userId)
+                if (!shouldExist && currentNode.data?.lastModifiedBy === userId) {
                     yNodes.delete(currentNode.id);
                 }
             });
 
             currentYEdges.forEach(currentEdge => {
                 const shouldExist = state.edges.some(edge => edge.id === currentEdge.id);
-                if (!shouldExist && currentEdge.data?.createdBy === userId) {
+                if (!shouldExist && currentEdge.data?.lastModifiedBy === userId) {
                     yEdges.delete(currentEdge.id);
                 }
             });

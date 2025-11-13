@@ -49,7 +49,7 @@ interface DiagramCanvasProps {
 
 const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCreated, yDoc, provider}) => {
     // Zustand store for undo/redo and state management
-    const {undo, redo, canUndo, canRedo, setCurrentUser, addUserHistory} = useStore();
+    const {undo, redo, canUndo, canRedo, setCurrentUser, addUserHistory, currentUserId} = useStore();
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
     const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
     const [editText, setEditText] = useState('');
@@ -62,7 +62,9 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
 
     useEffect(() => {
         if (provider) {
-            const userId = provider.awareness.clientID.toString();
+            const userString = sessionStorage.getItem('user');
+            const user = JSON.parse(userString);
+            const userId = user.id;
             setCurrentUser(userId);
         }
     }, [provider]);
@@ -153,7 +155,14 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
                         if (existingNode) {
                             const updatedNode = {
                                 ...existingNode,
-                                position: change.position
+                                position: change.position,
+                                ...(currentUserId && {
+                                    data: {
+                                        ...existingNode.data,
+                                        lastModifiedBy: currentUserId,
+                                        lastModifiedAt: Date.now(),
+                                    }
+                                })
                             };
                             yNodes.set(change.id, updatedNode);
                         }
@@ -167,7 +176,14 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
                                 ...existingNode,
                                 width: Math.max(20, change.dimensions.width),
                                 height: Math.max(20, change.dimensions.height),
-                                position: change.position ? change.position : existingNode.position
+                                position: change.position ? change.position : existingNode.position,
+                                ...(currentUserId && {
+                                    data: {
+                                        ...existingNode.data,
+                                        lastModifiedBy: currentUserId,
+                                        lastModifiedAt: Date.now(),
+                                    }
+                                })
                             };
                             yNodes.set(change.id, updatedNode);
                         }
@@ -209,25 +225,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
 
             changes.forEach(change => {
                 console.log('Processing edge change:', change.type, change.id);
-
-                if (change.type === 'add') {
-                    // Add user metadata to new edge
-                    const edgeWithMetadata = {
-                        ...change.item,
-                        data: {
-                            ...change.item.data,
-                            createdBy: provider?.awareness.clientID.toString(),
-                            lastModifiedBy: provider?.awareness.clientID.toString(),
-                            createdAt: Date.now(),
-                            lineStyle: selectedLineStyle
-                        },
-                        type: selectedEdgeType
-                    };
-
-                    yEdges.set(edgeWithMetadata.id, edgeWithMetadata);
-                    shouldSaveHistory = true;
-
-                } else if (change.type === 'remove') {
+                if (change.type === 'remove') {
                     yEdges.delete(change.id);
                     shouldSaveHistory = true;
                 }
@@ -262,8 +260,8 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
                 targetHandle: connection.targetHandle,
                 type: selectedEdgeType,
                 data: {
-                    createdBy: provider?.awareness.clientID.toString(),
-                    lastModifiedBy: provider?.awareness.clientID.toString(),
+                    createdBy: currentUserId,
+                    lastModifiedBy: currentUserId,
                     createdAt: Date.now(),
                     lineStyle: selectedLineStyle
                 }
@@ -284,9 +282,6 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
 
     const handleEdgeClick = useCallback((edgeId: string, edgeType: EdgeType, lineStyle?: LineStyle, origin: 'user' | 'yjs' | 'loaded' | 'undo-redo' = 'user') => {
         if (!yDoc) return;
-
-        const userId = provider?.awareness.clientID.toString();
-
         yDoc.transact(() => {
             const yEdges = yDoc.getMap('edges');
             const existingEdge = yEdges.get(edgeId);
@@ -296,10 +291,10 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
                     ...existingEdge,
                     type: edgeType,
                     // Update last modified info for user actions
-                    ...(origin === 'user' && userId && {
+                    ...(origin === 'user' && currentUserId && {
                         data: {
                             ...existingEdge.data,
-                            lastModifiedBy: userId,
+                            lastModifiedBy: currentUserId,
                             lastModifiedAt: Date.now(),
                             ...(lineStyle && {lineStyle})
                         }
@@ -307,7 +302,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
                 };
 
                 // Handle lineStyle separately for non-user origins
-                if (lineStyle && (origin !== 'user' || !userId)) {
+                if (lineStyle && (origin !== 'user' || !currentUserId)) {
                     updatedEdge.data = {
                         ...updatedEdge.data,
                         lineStyle: lineStyle
@@ -320,7 +315,7 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
         });
 
         // Save to user's history for user actions
-        if (origin === 'user' && userId) {
+        if (origin === 'user' && currentUserId) {
             addUserHistory({
                 nodes: Array.from(yDoc.getMap('nodes').values()),
                 edges: Array.from(yDoc.getMap('edges').values()),
@@ -358,8 +353,9 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
             data: {
                 label: `${shapeType.charAt(0).toUpperCase() + shapeType.slice(1)}`,
                 shapeType: shapeType,
-                createdBy: provider?.awareness.clientID.toString(),
-                createdAt: Date.now()
+                createdBy: currentUserId,
+                createdAt: Date.now(),
+                lastModifiedBy: currentUserId
             },
             width: dimensions.width,
             height: dimensions.height,
