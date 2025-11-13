@@ -40,6 +40,7 @@ function Diagram() {
             UndoRedoManager.setYDoc(doc);
             UndoRedoManager.setUserId(user.id);
             UndoRedoManager.initializeUserUndoManager();
+            UndoRedoManager.setDiagramId(diagramId);
 
             const wsProvider = new WebsocketProvider(
                 'ws://localhost:1234/',

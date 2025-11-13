@@ -13,7 +13,7 @@ const useStore = create<StoreState>((set, get) => ({
             if (!yDoc) return;
 
             const yNodes = yDoc.getMap('nodes');
-            yDoc.transact(() => {
+            UndoRedoManager.makeChange(() => {
                 changes.forEach(change => {
                     if (change.type === 'dimensions' && change.resizing === true) {
                         // Resize started - store current position
@@ -27,7 +27,7 @@ const useStore = create<StoreState>((set, get) => ({
                         }
                     }
                 });
-            }, `user-${UndoRedoManager.userId}`);
+            });
             const updatedNodes = applyNodeChanges(changes, nodes);
             setNodes(updatedNodes);
 
@@ -38,7 +38,7 @@ const useStore = create<StoreState>((set, get) => ({
             );
 
             if (shouldSyncToYjs && yDoc) {
-                yDoc.transact(() => {
+                UndoRedoManager.makeChange(() => {
                     changes.forEach(change => {
                         if (change.type === 'position' && change.dragging === false) {
                             const existingNode = yNodes.get(change.id);
@@ -61,7 +61,8 @@ const useStore = create<StoreState>((set, get) => ({
                             yNodes.delete(change.id);
                         }
                     });
-                }, `user-${UndoRedoManager.userId}`);
+                });
+                UndoRedoManager.useDebouncedSave();
             }
         }, [yDoc, nodes]);
     },
@@ -75,14 +76,15 @@ const useStore = create<StoreState>((set, get) => ({
             const updatedEdges = applyEdgeChanges(changes, currentEdges);
             setEdges(updatedEdges);
 
-            yDoc.transact(() => {
+            UndoRedoManager.makeChange(() => {
                 const yEdges = yDoc.getMap('edges');
                 changes.forEach(change => {
                     if (change.type === 'remove') {
                         yEdges.delete(change.id);
+                        UndoRedoManager.useDebouncedSave();
                     }
                 });
-            }, `user-${UndoRedoManager.userId}`);
+            });
         }, [yDoc]);
     },
 
@@ -90,7 +92,7 @@ const useStore = create<StoreState>((set, get) => ({
         return useCallback((connection: Connection) => {
             if (!yDoc) return;
 
-            yDoc.transact(() => {
+            UndoRedoManager.makeChange(() => {
                 const yEdges = yDoc.getMap('edges');
                 const edgeId = `edge-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
 
@@ -109,7 +111,8 @@ const useStore = create<StoreState>((set, get) => ({
                     }
                 };
                 yEdges.set(newEdge.id, newEdge);
-            }, `user-${UndoRedoManager.userId}`);
+                UndoRedoManager.useDebouncedSave();
+            });
         }, [yDoc, selectedEdgeType, selectedLineStyle, provider]);
     },
 
@@ -118,7 +121,7 @@ const useStore = create<StoreState>((set, get) => ({
             if (!yDoc) return;
 
             const userId = sessionStorage.getItem('user');
-            yDoc.transact(() => {
+            UndoRedoManager.makeChange(() => {
                 const yEdges = yDoc.getMap('edges');
                 const existingEdge = yEdges.get(edgeId);
 
@@ -143,8 +146,9 @@ const useStore = create<StoreState>((set, get) => ({
                         };
                     }
                     yEdges.set(edgeId, updatedEdge);
+                    UndoRedoManager.useDebouncedSave();
                 }
-            }, `user-${UndoRedoManager.userId}`);
+            });
         }, [yDoc, provider]);
     },
 
@@ -152,7 +156,7 @@ const useStore = create<StoreState>((set, get) => ({
         return useCallback((shapeType: string) => {
             if (!reactFlowInstance || !yDoc) return;
 
-            yDoc.transact(() => {
+            UndoRedoManager.makeChange(() => {
                 const position = reactFlowInstance.screenToFlowPosition({
                     x: window.innerWidth / 2,
                     y: window.innerHeight / 2,
@@ -173,7 +177,8 @@ const useStore = create<StoreState>((set, get) => ({
                 };
                 const yNodes = yDoc.getMap('nodes');
                 yNodes.set(newNode.id, newNode);
-            }, `user-${UndoRedoManager.userId}`);
+                UndoRedoManager.useDebouncedSave();
+            });
             onShapeCreated();
         }, [reactFlowInstance, yDoc, onShapeCreated, provider]);
     },
@@ -199,7 +204,7 @@ const useStore = create<StoreState>((set, get) => ({
         }
         if (origin === 'user') {
             // Use UndoRedoManager for user actions (undoable)
-            yDoc.transact(() => {
+            UndoRedoManager.makeChange(() => {
                 const updatedNode = {
                     ...existingNode,
                     data: {
@@ -210,7 +215,8 @@ const useStore = create<StoreState>((set, get) => ({
                     }
                 };
                 yNodes.set(nodeId, updatedNode);
-            }, `user-${UndoRedoManager.userId}`);
+                UndoRedoManager.useDebouncedSave();
+            });
         }
     }
 }));

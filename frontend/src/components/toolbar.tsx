@@ -77,7 +77,7 @@ const Toolbar: React.FC<ToolbarProps> = () => {
                 {/* Left Section - Logo & Title */}
                 <div className="flex items-center space-x-4 flex-shrink-0">
                     {/* Logo and Title */}
-                    <div className="flex w-72 justify-around items-center space-x-3">
+                    <div className="flex sm:w-20 lg:w-72 justify-around items-center space-x-3">
                         {/* Logo */}
                         <div className="flex items-center space-x-2">
                             <div
@@ -89,7 +89,7 @@ const Toolbar: React.FC<ToolbarProps> = () => {
                                 />
                             </div>
                             {/* Title - hidden on small mobile, visible on sm and up */}
-                            <h1 className="text-lg sm:text-xl font-bold text-white hidden sm:block">
+                            <h1 className="text-lg md:text-xl font-bold text-white hidden md:block">
                                 CoDiagram
                             </h1>
                         </div>
@@ -110,7 +110,10 @@ const Toolbar: React.FC<ToolbarProps> = () => {
                 )}
 
                 {/* Right Section - User Info & Controls */}
-                <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
+                <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0 ">
+                    <div className="flex w-32 sm:w-36 items-center space-x-1 sm:space-x-2 text-gray-300 px-2 py-1 sm:px-3 sm:py-2 rounded-lg text-xs font-medium transition-colors justify-center flex-shrink-0" id="save-status">
+                        {/* Content will be dynamically added but container width stays fixed */}
+                    </div>
                     {/* Collaboration Status */}
                     <div className="flex items-center space-x-2">
                         {id && (
@@ -151,7 +154,7 @@ const Toolbar: React.FC<ToolbarProps> = () => {
                                     </div>
 
                                     {/* User Name (hidden on small screens, visible on medium+) */}
-                                    <div className="hidden md:block min-w-0">
+                                    <div className="hidden lg:block min-w-0">
                                 <span className="text-sm font-medium text-white truncate block">
                                     {user.name}
                                 </span>

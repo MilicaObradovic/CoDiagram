@@ -233,28 +233,6 @@ const DiagramCanvas: React.FC<DiagramCanvasProps> = ({selectedShape, onShapeCrea
         }, {duration: 0});
     };
 
-    const useDebouncedSave = (diagramId: string | undefined, nodes: Node[], edges: Edge[], delay: number = 3000) => {
-        const saveDiagram = useCallback(async () => {
-            try {
-                const token = sessionStorage.getItem('token');
-                if (!token) return;
-
-                await authApi.updateDiagram(diagramId, {nodes, edges}, token);
-                console.log('Diagram auto-saved');
-            } catch (error) {
-                console.error('Auto-save failed:', error);
-            }
-        }, [diagramId, nodes, edges]);
-
-        useEffect(() => {
-            if (!diagramId || nodes.length === 0) return;
-
-            const timer = setTimeout(saveDiagram, delay);
-            return () => clearTimeout(timer);
-        }, [saveDiagram, delay, diagramId, nodes.length]);
-    };
-    useDebouncedSave(id, nodes, edges, 3000);
-
     return (
         <div style={{width: '100%', height: '100%'}} className="flex relative">
             <div className="flex-1 relative" id="diagram-container">
