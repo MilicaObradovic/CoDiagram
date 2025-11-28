@@ -9,7 +9,7 @@ A collaborative diagram creation app with real-time editing
 - preview where collaborators are on canvas
 - undo/redo
 - download diagram
-- save diagram
+- auto-save diagram on every bigger change
 - preview all your diagrams
 
 ![alt text](<readme-images/Screenshot 2025-11-11 at 10.38.12 (2).png>)

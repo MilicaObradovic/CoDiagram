@@ -8,7 +8,8 @@
     "start": "node server.js",
     "dev": "nodemon server.js",
     "yjs-server": "node yjs-server/yjs-websocket.js",
-    "load-test": "node load-test/yjs-protocol-test.js",
+    "load-test1": "node load-tests/yjs-protocol-test.js",
+    "load-test2": "node load-tests/save-diagram-test.js",
     "dev:all": "concurrently \"npm run dev\" \"npm run yjs-server\""
   },
   "keywords": [],
@@ -16,6 +17,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "axios": "^1.13.2",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
