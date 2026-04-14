@@ -8,8 +8,9 @@
     "start": "node server.js",
     "dev": "nodemon server.js",
     "yjs-server": "node yjs-server/yjs-websocket.js",
-    "load-test1": "node load-tests/yjs-protocol-test.js",
-    "load-test2": "node load-tests/save-diagram-test.js",
+    "load-test1": "node tests/yjs-protocol-test.js",
+    "load-test2": "node tests/save-diagram-test.js",
+    "conflict-test": "node tests/yjs-conflict-tester.js",
     "dev:all": "concurrently \"npm run dev\" \"npm run yjs-server\""
   },
   "keywords": [],

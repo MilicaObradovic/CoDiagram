@@ -301,7 +301,7 @@ class YjsLoadTester {
         let failedConnections = 0;
 
         for (let i = 0; i < userCount; i++) {
-            const roomId = `${this.baseRoom}-${Math.floor(i / 10)}`;
+            const roomId = `${this.baseRoom}-${i % 5}`;
             const userId = `user-${i}`;
             
             const promise = this.createYjsClient(userId, roomId)
