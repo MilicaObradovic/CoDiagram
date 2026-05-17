@@ -17,7 +17,7 @@ class DiagramUpdateLoadTester {
     }
 
     async findBreakingPoint(diagramId, updateType = 'node-move') {
-        console.log('🚀 Finding Breaking Point for Diagram Update Route\n');
+        console.log(' Finding Breaking Point for Diagram Update Route\n');
         
         const config = {
             startUsers: 10,
@@ -35,7 +35,7 @@ class DiagramUpdateLoadTester {
         let maxStableUsers = 0;
 
         while (currentUsers <= config.maxUsers && !this.breakingPoint) {
-            console.log(`\n🎯 Testing ${currentUsers} concurrent users...`);
+            console.log(`\n Testing ${currentUsers} concurrent users...`);
             
             this.resetMetrics();
             const success = await this.runLoadTestStep(diagramId, {
@@ -54,6 +54,10 @@ class DiagramUpdateLoadTester {
                 // Increase increment as we go higher to speed up testing
                 if (currentUsers > 100) config.increment = 25;
                 if (currentUsers > 300) config.increment = 50;
+            } else {
+                this.breakingPoint = currentUsers;
+                console.log(`\n❌ BREAKING POINT REACHED AT ${currentUsers} USERS.`);
+                break;
             }
 
             await new Promise(resolve => setTimeout(resolve, config.cooldownBetweenSteps));
@@ -158,7 +162,7 @@ class DiagramUpdateLoadTester {
         
         // Log current step results
         console.log(`
-        📊 Step Results:
+         Step Results:
         ├── Success Rate: ${successRate.toFixed(2)}%
         ├── Avg Latency: ${avgLatency.toFixed(2)}ms
         ├── Requests/Sec: ${requestsPerSecond.toFixed(2)}
@@ -277,11 +281,11 @@ class DiagramUpdateLoadTester {
     }
 
     printBreakingPointResults(maxStableUsers, breakingPoint) {
-        console.log('\n🎯 ===== BREAKING POINT ANALYSIS =====\n');
-        console.log(`🏆 Maximum Stable Users: ${maxStableUsers}`);
-        console.log(`💥 Breaking Point: ${breakingPoint || 'Not reached (test stopped at max limit)'}`);
+        console.log('\n ===== BREAKING POINT ANALYSIS =====\n');
+        console.log(` Maximum Stable Users: ${maxStableUsers}`);
+        console.log(` Breaking Point: ${breakingPoint || 'Not reached (test stopped at max limit)'}`);
         
-        console.log('\n📊 Performance Progression:');
+        console.log('\n Performance Progression:');
         console.log('Users | Success Rate | Avg Latency | Req/Sec | Status');
         console.log('------|--------------|-------------|---------|--------');
         
@@ -293,7 +297,7 @@ class DiagramUpdateLoadTester {
             );
         });
 
-        console.log('\n💡 Capacity Analysis:');
+        console.log('\n Capacity Analysis:');
         if (maxStableUsers >= 500) {
             console.log('✅ EXCELLENT - Can handle enterprise-scale loads');
         } else if (maxStableUsers >= 200) {
@@ -320,7 +324,7 @@ class DiagramUpdateLoadTester {
 // Usage - Find the actual breaking point
 const tester = new DiagramUpdateLoadTester(
     'http://localhost:5001',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTAzZTJjY2Y2Yzk3MDBiYTlhZjM1YjciLCJpYXQiOjE3NjQyNjMxNzcsImV4cCI6MTc2NDg2Nzk3N30.M-ckd6hMK1sEtuqI1RNb0PPijtMrYlVWHOvgDQ8rFFQ'
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTAzZTJjY2Y2Yzk3MDBiYTlhZjM1YjciLCJpYXQiOjE3Nzg5NTI3OTAsImV4cCI6MTc3OTU1NzU5MH0.d85kLoE6-mZwbkfKkY61zwUqKoexRmYwtns3zmiJ8NA'
 );
 
 async function main() {

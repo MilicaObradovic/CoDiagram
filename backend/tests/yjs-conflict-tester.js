@@ -84,7 +84,7 @@ class YjsConflictTester {
 
     async runTest() {
         try {
-            await this.setupClients(2);
+            await this.setupClients(4);
             await this.triggerSimultaneousConflict();
             this.cleanup();
         } catch (error) {

@@ -28,18 +28,15 @@ class YjsLoadTester {
                 ws,
                 connected: false,
                 roomId,
-                nodes: doc.getMap('nodes'),
-                edges: doc.getMap('edges'),
-                awareness: doc.getMap('awareness')
+                nodes: doc.getMap('nodes')
             };
 
-            this.initializeDocument(client);
-
-            // Set timeout for connection (detect hanging connections)
             const connectionTimeout = setTimeout(() => {
                 if (!client.connected) {
                     this.metrics.connectionFailures++;
-                    reject(new Error(`Connection timeout for ${userId}`));
+                    this.checkSystemHealth();
+                    ws.terminate();
+                    reject(new Error(`Connection timeout: ${userId}`));
                 }
             }, 10000);
 
@@ -47,8 +44,6 @@ class YjsLoadTester {
                 clearTimeout(connectionTimeout);
                 client.connected = true;
                 this.metrics.activeConnections++;
-                console.log(`✅ Client ${userId} connected to ${roomId}`);
-                
                 this.startUserSimulation(client);
                 resolve(client);
             });
@@ -63,18 +58,19 @@ class YjsLoadTester {
                 }
             });
 
-            ws.on('error', (error) => {
+            ws.on('error', () => {
                 clearTimeout(connectionTimeout);
                 this.metrics.errors++;
                 this.metrics.connectionFailures++;
-                console.error(`❌ Client ${userId} error:`, error.message);
                 this.checkSystemHealth();
-                reject(error);
+                reject(new Error('WebSocket Error'));
             });
 
             ws.on('close', () => {
-                client.connected = false;
-                this.metrics.activeConnections--;
+                if (client.connected) {
+                    client.connected = false;
+                    this.metrics.activeConnections--;
+                }
             });
 
             this.clients.set(userId, client);
@@ -82,313 +78,144 @@ class YjsLoadTester {
     }
 
     checkSystemHealth() {
-        // Check if system is becoming unstable
-        const totalOperations = this.metrics.messagesSent + this.metrics.errors;
-        const errorRate = totalOperations > 0 ? (this.metrics.errors / totalOperations) * 100 : 0;
+        if (!this.isSystemStable) return;
+
+        const totalOps = this.metrics.messagesSent + this.metrics.errors;
+        const errorRate = totalOps > 0 ? (this.metrics.errors / totalOps) * 100 : 0;
         
-        if (errorRate > 10 || this.metrics.connectionFailures > this.metrics.activeConnections * 0.1) {
+        // Stability criteria: Error rate > 5% or ANY connection failure
+        if (errorRate > 5 || this.metrics.connectionFailures > 0) {
+            console.log(`\n[!] INSTABILITY DETECTED: Errors: ${errorRate.toFixed(2)}%, Failures: ${this.metrics.connectionFailures}`);
             this.isSystemStable = false;
-            console.log('🚨 SYSTEM UNSTABLE - High error rate detected');
         }
-    }
-
-    initializeDocument(client) {
-        client.nodes.set('start-node', {
-            id: 'start-node',
-            type: 'input',
-            position: { x: 100, y: 100 },
-            data: { label: 'Start' }
-        });
-
-        client.awareness.set(client.id, {
-            user: { id: client.id, name: `User-${client.id}` },
-            cursor: { x: 0, y: 0 },
-            selection: []
-        });
     }
 
     startUserSimulation(client) {
-        const actions = [
-            () => this.simulateNodeMove(client),
-            () => this.simulateNodeCreate(client),
-            () => this.simulateCursorMove(client),
-        ];
-
-        const scheduleNextAction = () => {
-            if (!this.isSystemStable) return; // Stop if system unstable
+        const action = () => {
+            if (!this.isSystemStable || !client.connected) return;
             
-            const delay = 500 + Math.random() * 2000;
-            setTimeout(() => {
-                if (client.connected && this.isSystemStable) {
-                    const action = actions[Math.floor(Math.random() * actions.length)];
-                    action();
-                    scheduleNextAction();
-                }
-            }, delay);
-        };
-
-        scheduleNextAction();
-    }
-
-    simulateNodeMove(client) {
-        if (!this.isSystemStable) return;
-        
-        const nodeIds = Array.from(client.nodes.keys());
-        if (nodeIds.length === 0) return;
-
-        const nodeId = nodeIds[Math.floor(Math.random() * nodeIds.length)];
-        const current = client.nodes.get(nodeId);
-        
-        client.nodes.set(nodeId, {
-            ...current,
-            position: {
-                x: current.position.x + (Math.random() * 40 - 20),
-                y: current.position.y + (Math.random() * 40 - 20)
-            }
-        });
-        
-        this.sendYjsUpdate(client);
-    }
-
-    simulateNodeCreate(client) {
-        if (!this.isSystemStable) return;
-        
-        const nodeId = `node-${Date.now()}-${client.id}`;
-        const nodeTypes = ['input', 'default', 'output', 'rectangle', 'circle'];
-        
-        client.nodes.set(nodeId, {
-            id: nodeId,
-            type: nodeTypes[Math.floor(Math.random() * nodeTypes.length)],
-            position: { 
-                x: Math.random() * 800, 
-                y: Math.random() * 600 
-            },
-            data: { label: `Node ${nodeId}` }
-        });
-        
-        this.sendYjsUpdate(client);
-    }
-
-    simulateCursorMove(client) {
-        if (!this.isSystemStable) return;
-        
-        client.awareness.set(client.id, {
-            user: { id: client.id, name: `User-${client.id}` },
-            cursor: { 
-                x: Math.random() * 1000, 
-                y: Math.random() * 800 
-            },
-            selection: []
-        });
-        
-        this.sendYjsUpdate(client);
-    }
-
-    sendYjsUpdate(client) {
-        if (client.connected && client.ws.readyState === WebSocket.OPEN && this.isSystemStable) {
             try {
+                // Simulate a simple data change
+                client.nodes.set(`node-${client.id}`, { x: Math.random(), y: Math.random() });
                 const update = Y.encodeStateAsUpdate(client.doc);
-                client.ws.send(update);
-                this.metrics.messagesSent++;
-            } catch (error) {
+                if (client.ws.readyState === WebSocket.OPEN) {
+                    client.ws.send(update);
+                    this.metrics.messagesSent++;
+                }
+            } catch (e) {
                 this.metrics.errors++;
                 this.checkSystemHealth();
             }
-        }
+
+            setTimeout(action, 1000 + Math.random() * 2000);
+        };
+        action();
     }
 
     async runIncrementalLoadTest() {
-        console.log('🚀 Starting Incremental Yjs Load Test\n');
-        console.log('📈 Will gradually add users until system breaks\n');
-
-        const config = {
-            initialUsers: 50,
-            incrementStep: 50,
-            maxUsers: 1000,
-            testDurationPerStep: 10000, // 10 seconds per step
-            stabilityThreshold: 5, // 5% error rate
-            cooldownBetweenSteps: 2000
+        console.log('--- STARTING YJS LOAD TEST ---\n');
+        
+        const config = { 
+            initial: 50, 
+            step: 50, 
+            max: 5000, 
+            duration: 10000,
+            rooms: 3
         };
 
-        let currentUsers = config.initialUsers;
-        let maxStableUsers = 0;
-        let breakingPoint = null;
+        let current = config.initial;
 
-        while (currentUsers <= config.maxUsers && this.isSystemStable) {
-            console.log(`\n🎯 Testing ${currentUsers} users...`);
+        while (current <= config.max && this.isSystemStable) {
+            console.log(`\nTESTING: ${current} Users`);
+            const success = await this.runSingleTest(current, config.duration, config.rooms);
             
-            const success = await this.runSingleTest(currentUsers, config.testDurationPerStep);
-            
-            if (success) {
-                maxStableUsers = currentUsers;
-                console.log(`✅ System stable with ${currentUsers} users`);
-                currentUsers += config.incrementStep;
-            } else {
-                breakingPoint = currentUsers;
-                console.log(`❌ System broke at ${currentUsers} users`);
+            if (!success) {
+                console.log(`\n❌ SYSTEM FAILED AT ${current} USERS.`);
                 break;
             }
-
-            // Cool down
-            await new Promise(resolve => setTimeout(resolve, config.cooldownBetweenSteps));
+            
+            console.log(`✅ SUCCESS: ${current} users stable.`);
+            current += config.step;
+            await new Promise(r => setTimeout(r, 2000));
         }
 
-        this.printFinalResults(maxStableUsers, breakingPoint);
+        this.printFinalResults();
     }
 
-    async runSingleTest(userCount, durationMs) {
+    async runSingleTest(userCount, durationMs, rooms) {
+        await this.cleanup();
         this.resetMetrics();
         this.isSystemStable = true;
-        
+
         try {
-            // Connect users with progress tracking
-            console.log(`🔗 Connecting ${userCount} users...`);
-            const connectStart = Date.now();
-            await this.connectUsersWithProgress(userCount);
-            const connectTime = Date.now() - connectStart;
-
-            const connectedCount = this.metrics.activeConnections;
-            const connectionSuccessRate = (connectedCount / userCount) * 100;
+            const connectionPromises = [];
+            const roomIds = new Set();
             
-            console.log(`✅ Connected ${connectedCount}/${userCount} users in ${connectTime}ms (${connectionSuccessRate.toFixed(1)}% success)`);
+            for (let i = 0; i < userCount; i++) {
+                // Logic: room changes every X users. 
+                // If usersPerRoom is 2000, it stays as room-0 for the whole test.
+                const roomIndex = Math.floor(i % rooms);
+                const roomId = `${this.baseRoom}-${roomIndex}`;
+                roomIds.add(roomId);
 
-            // If less than 80% connected, consider it a failure
-            if (connectionSuccessRate < 80) {
-                console.log('❌ Connection success rate too low');
-                this.cleanup();
-                return false;
+                connectionPromises.push(this.createYjsClient(`u-${i}-${Date.now()}`, roomId));
+                
+                if (i % 20 === 0) await new Promise(r => setTimeout(r, 50));
             }
 
-            // Run test with live monitoring
-            console.log(`🔄 Running test for ${durationMs/1000} seconds...`);
-            const testInterval = setInterval(() => {
-                this.logLiveMetrics(userCount);
-            }, 2000);
+            console.log(`   Target Rooms: ${roomIds.size}`);
+            await Promise.all(connectionPromises);
+            console.log(`   All ${userCount} clients connected. Simulation running...`);
 
-            await new Promise(resolve => setTimeout(resolve, durationMs));
-            clearInterval(testInterval);
+            const startTime = Date.now();
+            while (Date.now() - startTime < durationMs) {
+                if (!this.isSystemStable) {
+                    return false; 
+                }
+                await new Promise(r => setTimeout(r, 200));
+            }
+            const mps = (this.metrics.messagesSent / (durationMs / 1000)).toFixed(2);
+            const errorRate = (this.metrics.errors / (this.metrics.messagesSent + this.metrics.errors)) * 100 || 0;
 
-            // Calculate final metrics
-            const testDurationSeconds = durationMs / 1000;
-            const messagesPerSecond = (this.metrics.messagesSent / testDurationSeconds).toFixed(2);
-            const errorRate = (this.metrics.errors / (this.metrics.messagesSent + this.metrics.errors)) * 100;
+            // CRITICAL: Success must be false if background stability is lost
             const success = errorRate < 5 && this.isSystemStable;
-
-            // Store results
-            this.performanceLog.push({
-                users: userCount,
-                messagesPerSecond: messagesPerSecond,
-                errorRate: errorRate.toFixed(2),
-                connectionSuccessRate: connectionSuccessRate.toFixed(1),
-                success: success
+            this.performanceLog.push({ 
+                users: userCount, 
+                rooms: roomIds.size,
+                mps: mps,
+                errors: this.metrics.errors,
+                success: success 
             });
-
-            console.log(`📊 Final: ${messagesPerSecond} msg/sec, ${errorRate.toFixed(2)}% errors, System stable: ${this.isSystemStable}`);
-
-            this.cleanup();
             return success;
 
-        } catch (error) {
-            console.error(`❌ Test failed for ${userCount} users:`, error.message);
-            this.cleanup();
+        } catch (e) {
+            console.log(`   Critical error during test: ${e.message}`);
             return false;
         }
     }
 
-    async connectUsersWithProgress(userCount) {
-        const connectionPromises = [];
-        let successfulConnections = 0;
-        let failedConnections = 0;
-
-        for (let i = 0; i < userCount; i++) {
-            const roomId = `${this.baseRoom}-${i % 5}`;
-            const userId = `user-${i}`;
-            
-            const promise = this.createYjsClient(userId, roomId)
-                .then(() => {
-                    successfulConnections++;
-                    if ((successfulConnections + failedConnections) % 50 === 0) {
-                        console.log(`   ... ${successfulConnections + failedConnections}/${userCount} connections attempted`);
-                    }
-                })
-                .catch(() => {
-                    failedConnections++;
-                });
-
-            connectionPromises.push(promise);
-
-            // Stagger connections
-            if (i % 20 === 0) {
-                await new Promise(resolve => setTimeout(resolve, 50));
-            }
-
-            // Stop if system is becoming unstable
-            if (!this.isSystemStable) {
-                console.log('🛑 Stopping connections due to system instability');
-                break;
-            }
-        }
-
-        await Promise.allSettled(connectionPromises);
-    }
-
-    logLiveMetrics(userCount) {
-        const testDurationSoFar = 10; // approximate
-        const currentMessagesPerSecond = (this.metrics.messagesSent / testDurationSoFar).toFixed(2);
-        const errorRate = ((this.metrics.errors / (this.metrics.messagesSent + this.metrics.errors)) * 100).toFixed(2);
-        const healthStatus = this.isSystemStable ? '✅ STABLE' : '🚨 UNSTABLE';
-
-        console.log(`   ${healthStatus} | Msg: ${currentMessagesPerSecond}/sec | Errors: ${errorRate}% | Active: ${this.metrics.activeConnections}/${userCount}`);
-    }
-
     resetMetrics() {
-        this.metrics = {
-            activeConnections: 0,
-            messagesSent: 0,
-            updatesApplied: 0,
-            errors: 0,
-            connectionFailures: 0
-        };
+        this.metrics = { activeConnections: 0, messagesSent: 0, updatesApplied: 0, errors: 0, connectionFailures: 0 };
     }
 
-    printFinalResults(maxStableUsers, breakingPoint) {
-        console.log('\n🎯 ===== YJS LOAD TEST RESULTS =====\n');
-        console.log(`🏆 Maximum Stable Users: ${maxStableUsers}`);
-        console.log(`💥 Breaking Point: ${breakingPoint || 'Not reached'}`);
-        
-        console.log('\n📊 Performance Summary:');
-        console.log('Users | Msg/sec | Error Rate | Conn Success | Status');
-        console.log('------|---------|------------|--------------|--------');
-        
-        this.performanceLog.forEach(log => {
-            const status = log.success ? '✅ PASS' : '❌ FAIL';
-            console.log(
-                `${log.users.toString().padEnd(5)} | ${log.messagesPerSecond.padEnd(7)} | ${log.errorRate.toString().padEnd(9)}% | ${log.connectionSuccessRate.toString().padEnd(11)}% | ${status}`
-            );
-        });
-
-        console.log('\n💡 Recommendations:');
-        if (maxStableUsers < 50) {
-            console.log('❌ System needs major optimization');
-        } else if (maxStableUsers < 200) {
-            console.log('⚠️  Suitable for small teams, consider scaling solutions');
-        } else if (maxStableUsers < 500) {
-            console.log('✅ Good for medium organizations');
-        } else {
-            console.log('🎉 Excellent! Ready for large-scale enterprise use');
-        }
-    }
-
-    cleanup() {
-        this.clients.forEach(client => {
-            if (client.ws.readyState === WebSocket.OPEN) {
-                client.ws.close();
-            }
-        });
+    async cleanup() {
+        this.clients.forEach(c => c.ws.terminate());
         this.clients.clear();
+        await new Promise(r => setTimeout(r, 1000));
+    }
+
+    printFinalResults() {
+        console.log('\n--- PERFORMANCE SUMMARY ---');
+        console.log('Users | Rooms | Msg/sec | Errors | Status');
+        console.log('-----------------------------------------');
+        this.performanceLog.forEach(l => {
+            console.log(`${l.users.toString().padEnd(5)} | ${l.rooms.toString().padEnd(5)} | ${l.mps.padEnd(7)} | ${l.errors.toString().padEnd(6)} | ${l.success ? '✅ PASS' : '❌ FAIL'}`);
+        });
     }
 }
 
-// Run the test
 const tester = new YjsLoadTester('ws://localhost:1234', 'load-test');
-tester.runIncrementalLoadTest().catch(console.error);
+tester.runIncrementalLoadTest().then(() => {
+    console.log('\nLoad test process completed.');
+    process.exit(0);
+});
