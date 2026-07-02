@@ -1,8 +1,11 @@
 const express = require('express');
+const http = require('http');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const { attachYjsWebSocketServer } = require('./yjs-server/yjs-websocket');
 require('dotenv').config();
 const app = express();
+const server = http.createServer(app);
 
 app.use((req, res, next) => {
     console.log('🟡 Incoming request:', req.method, req.url);
@@ -29,7 +32,9 @@ mongoose.connect(process.env.MONGODB_URI, {
 .catch(err => console.log('MongoDB connection error:', err));
 
 const PORT = process.env.PORT || 5001;
-app.listen(PORT, () => {
+attachYjsWebSocketServer(server, { route: '/api/yjs' });
+
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 

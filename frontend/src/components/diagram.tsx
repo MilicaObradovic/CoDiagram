@@ -43,7 +43,7 @@ function Diagram() {
             UndoRedoManager.setDiagramId(diagramId);
 
             const wsProvider = new WebsocketProvider(
-                'ws://localhost:1234/',
+                'ws://localhost:5001/api/yjs',
                 String(diagramId), // room name
                 doc
             );

@@ -99,5 +99,5 @@ class YjsConflictTester {
 }
 
 // Running the test on the local server
-const conflictTester = new YjsConflictTester('ws://localhost:1234', 'test-room-1');
+const conflictTester = new YjsConflictTester('ws://localhost:5001/api/yjs', 'test-room-1');
 conflictTester.runTest();

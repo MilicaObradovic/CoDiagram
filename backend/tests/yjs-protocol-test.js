@@ -362,7 +362,7 @@ class YjsLoadTester {
     }
 }
 
-const tester = new YjsLoadTester('ws://localhost:1234', 'load-test');
+const tester = new YjsLoadTester('ws://localhost:5001/api/yjs', 'load-test');
 tester.runIncrementalLoadTest().then(() => {
     console.log('\nLoad test process completed.');
     process.exit(0);
