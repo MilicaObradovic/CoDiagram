@@ -2,13 +2,11 @@ import type {ShapeType} from "../types/diagram.ts";
 import ShapeMenu from "./shapeMenu.tsx";
 import DiagramCanvas from "./diagramCanvas.tsx";
 import {useEffect, useState} from "react";
-import {type Edge, ReactFlowProvider} from "reactflow";
+import {ReactFlowProvider} from "reactflow";
 import {useParams} from "react-router-dom";
-import {authApi} from "../services/service.ts";
 import {UndoRedoManager} from "../store/undo-redo.ts";
 import {WebsocketProvider} from "y-websocket";
 import * as Y from 'yjs';
-import type {Node} from "@xyflow/react";
 
 function Diagram() {
     const [selectedShape, setSelectedShape] = useState<ShapeType>();
@@ -25,17 +23,28 @@ function Diagram() {
         }
     }, [id]);
 
+    useEffect(() => {
+        return () => {
+            provider?.destroy();
+            yDoc?.destroy();
+            UndoRedoManager.removeUserUndoManager();
+        };
+    }, [provider, yDoc]);
+
     const initializeYjsAndLoadDiagram = async (diagramId: string) => {
         try {
+            setIsLoading(true);
+            setError('');
             const token = sessionStorage.getItem('token');
             if (!token) {
                 console.log('Not authenticated');
+                setError('Not authenticated');
+                setIsLoading(false);
                 return;
             }
             const userString = sessionStorage.getItem('user');
             const user = JSON.parse(userString);
-            // 1. Initialize Yjs
-            console.log('Initializing Yjs...');
+
             const doc = new Y.Doc();
             UndoRedoManager.setYDoc(doc);
             UndoRedoManager.setUserId(user.id);
@@ -44,36 +53,29 @@ function Diagram() {
 
             const wsProvider = new WebsocketProvider(
                 'ws://localhost:5001/api/yjs',
-                String(diagramId), // room name
-                doc
+                String(diagramId),
+                doc,
+                {
+                    params: { token }
+                }
             );
+
+            wsProvider.on('status', ({ status }: { status: string }) => {
+                console.log(`Yjs websocket status for diagram ${diagramId}: ${status}`);
+            });
+
+            wsProvider.on('sync', (isSynced: boolean) => {
+                console.log(`Yjs sync for diagram ${diagramId}: ${isSynced}`);
+                if (isSynced) {
+                    setIsLoading(false);
+                }
+            });
 
             setYDoc(doc);
             setProvider(wsProvider);
-
-            // 2. Load data from database
-            const diagramData = await authApi.getDiagramById(diagramId, token);
-
-            // 3. Load data into Yjs (which will automatically sync to React Flow)
-            const yNodes = doc.getMap('nodes');
-            const yEdges = doc.getMap('edges');
-
-            // Clear any existing data and load from database
-            yNodes.clear();
-            yEdges.clear();
-
-            diagramData.nodes.forEach((node: Node) => {
-                yNodes.set(node.id, node);
-            });
-
-            diagramData.edges.forEach((edge: Edge) => {
-                yEdges.set(edge.id, edge);
-            });
-
         } catch (error) {
             console.error('Error loading diagram:', error);
             setError(error instanceof Error ? error.message : 'Failed to load diagram');
-        } finally {
             setIsLoading(false);
         }
     };

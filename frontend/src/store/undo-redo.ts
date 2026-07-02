@@ -1,6 +1,4 @@
 import * as Y from 'yjs';
-import type {Edge} from "reactflow";
-import {authApi} from "../services/service.ts";
 
 export const UndoRedoManager = {
     undoManagers: new Map<string, Y.UndoManager>(),
@@ -9,6 +7,7 @@ export const UndoRedoManager = {
     diagramId: "" as string,
     isSaving: false as boolean,
     saveStatusElement: null as HTMLElement | null,
+    saveStatusTimeout: null as ReturnType<typeof setTimeout> | null,
 
     setYDoc(doc: Y.Doc): void {
         this.yDoc = doc;
@@ -68,28 +67,15 @@ export const UndoRedoManager = {
     },
 
     async useDebouncedSave(): Promise<void> {
-        try {
-            this.setIsSaving(true);
-            const token = sessionStorage.getItem('token');
-            if (!token || !this.diagramId || !this.yDoc) return;
+        this.setIsSaving(true);
 
-            // Get nodes and edges directly from Y.js
-            const yNodes = this.yDoc.getMap('nodes');
-            const yEdges = this.yDoc.getMap('edges');
-
-            // Convert to regular JavaScript objects
-            const nodes = Array.from(yNodes.values());
-            const edges = Array.from(yEdges.values());
-
-            await authApi.updateDiagram(this.diagramId, {nodes, edges}, token);
-            console.log('Diagram auto-saved');
-        } catch (error) {
-            console.error('Auto-save failed:', error);
-        } finally {
-            setTimeout(() => {
-                this.setIsSaving(false);
-            }, 1000);
+        if (this.saveStatusTimeout) {
+            clearTimeout(this.saveStatusTimeout);
         }
+
+        this.saveStatusTimeout = setTimeout(() => {
+            this.setIsSaving(false);
+        }, 1000);
     },
     updateSaveIndicator(): void {
         if (!this.saveStatusElement) {
@@ -98,9 +84,9 @@ export const UndoRedoManager = {
 
         if (this.saveStatusElement) {
             if (this.isSaving) {
-                this.saveStatusElement.textContent = 'Saving...';
+                this.saveStatusElement.textContent = 'Syncing...';
             } else {
-                this.saveStatusElement.textContent = 'All changes saved';
+                this.saveStatusElement.textContent = 'Changes synced';
             }
         }
     }
