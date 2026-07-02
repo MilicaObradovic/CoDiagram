@@ -1,5 +1,45 @@
 const WebSocket = require('ws');
 const Y = require('yjs');
+const syncProtocol = require('y-protocols/sync');
+const encoding = require('lib0/encoding');
+const decoding = require('lib0/decoding');
+
+const messageSync = 0;
+const messageAwareness = 1;
+
+function createSyncStep1Message(doc) {
+    const encoder = encoding.createEncoder();
+    encoding.writeVarUint(encoder, messageSync);
+    syncProtocol.writeSyncStep1(encoder, doc);
+    return Buffer.from(encoding.toUint8Array(encoder));
+}
+
+function createUpdateMessage(update) {
+    const encoder = encoding.createEncoder();
+    encoding.writeVarUint(encoder, messageSync);
+    syncProtocol.writeUpdate(encoder, update);
+    return Buffer.from(encoding.toUint8Array(encoder));
+}
+
+function processServerMessage(doc, data) {
+    const decoder = decoding.createDecoder(new Uint8Array(data));
+    const messageType = decoding.readVarUint(decoder);
+
+    if (messageType === messageSync) {
+        const encoder = encoding.createEncoder();
+        encoding.writeVarUint(encoder, messageSync);
+        syncProtocol.readSyncMessage(decoder, encoder, doc, null);
+        const reply = encoding.toUint8Array(encoder);
+        return reply.length > 1 ? Buffer.from(reply) : null;
+    }
+
+    if (messageType === messageAwareness) {
+        decoding.readVarUint8Array(decoder);
+        return null;
+    }
+
+    throw new Error(`Unsupported message type: ${messageType}`);
+}
 
 class YjsConflictTester {
     constructor(serverUrl, roomId) {
@@ -26,11 +66,15 @@ class YjsConflictTester {
 
             await new Promise((resolve) => {
                 ws.on('open', () => {
+                    ws.send(createSyncStep1Message(doc));
                     client.connected = true;
                     resolve();
                 });
                 ws.on('message', (data) => {
-                    Y.applyUpdate(client.doc, new Uint8Array(data));
+                    const reply = processServerMessage(client.doc, data);
+                    if (reply) {
+                        ws.send(reply);
+                    }
                     client.lastReceivedState = client.nodes.get('conflict-node');
                 });
             });
@@ -53,7 +97,7 @@ class YjsConflictTester {
                     label: `Set by ${client.id}`
                 });
                 const update = Y.encodeStateAsUpdate(client.doc);
-                client.ws.send(update);
+                client.ws.send(createUpdateMessage(update));
             };
         });
 
